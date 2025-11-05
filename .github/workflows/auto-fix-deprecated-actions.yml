@@ -1,0 +1,182 @@
+name: Auto-fix Deprecated Actions
+
+on:
+  schedule:
+    # Run weekly on Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+  push:
+    paths:
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+
+jobs:
+  detect-and-fix-deprecated-actions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Scan and fix deprecated actions
+        id: fix-actions
+        run: |
+          # Initialize flags
+          changes_made=false
+          branch_name="automated/fix-deprecated-actions-$(date +%Y%m%d-%H%M%S)"
+          
+          # Create array to track changes
+          declare -a changed_files
+          
+          # Find all workflow files
+          workflow_files=$(find .github/workflows -type f \( -name "*.yml" -o -name "*.yaml" \) ! -name "auto-fix-deprecated-actions.yml")
+          
+          echo "Scanning workflow files for deprecated actions..."
+          
+          for file in $workflow_files; do
+            if [ -f "$file" ]; then
+              echo "Checking: $file"
+              
+              # Create a backup
+              cp "$file" "${file}.bak"
+              
+              # Fix actions/cache@v1 -> actions/cache@v4
+              if grep -q "actions/cache@v1" "$file"; then
+                sed -i 's|actions/cache@v1|actions/cache@v4|g' "$file"
+                echo "  ✓ Updated actions/cache@v1 to @v4"
+                changes_made=true
+                changed_files+=("$file")
+              fi
+              
+              # Fix actions/cache@v2 -> actions/cache@v4
+              if grep -q "actions/cache@v2" "$file"; then
+                sed -i 's|actions/cache@v2|actions/cache@v4|g' "$file"
+                echo "  ✓ Updated actions/cache@v2 to @v4"
+                changes_made=true
+                changed_files+=("$file")
+              fi
+              
+              # Check for other commonly deprecated actions
+              # actions/checkout@v1 or v2 -> actions/checkout@v4
+              if grep -q "actions/checkout@v[12]" "$file"; then
+                sed -i 's|actions/checkout@v[12]|actions/checkout@v4|g' "$file"
+                echo "  ✓ Updated actions/checkout to @v4"
+                changes_made=true
+                changed_files+=("$file")
+              fi
+              
+              # actions/setup-node@v1 or v2 -> actions/setup-node@v4
+              if grep -q "actions/setup-node@v[12]" "$file"; then
+                sed -i 's|actions/setup-node@v[12]|actions/setup-node@v4|g' "$file"
+                echo "  ✓ Updated actions/setup-node to @v4"
+                changes_made=true
+                changed_files+=("$file")
+              fi
+              
+              # actions/setup-python@v1 or v2 -> actions/setup-python@v5
+              if grep -q "actions/setup-python@v[12]" "$file"; then
+                sed -i 's|actions/setup-python@v[12]|actions/setup-python@v5|g' "$file"
+                echo "  ✓ Updated actions/setup-python to @v5"
+                changes_made=true
+                changed_files+=("$file")
+              fi
+              
+              # Remove backup if no changes
+              if cmp -s "$file" "${file}.bak"; then
+                rm "${file}.bak"
+              else
+                rm "${file}.bak"
+              fi
+            fi
+          done
+          
+          echo "changes_made=$changes_made" >> $GITHUB_OUTPUT
+          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
+          
+          if [ "$changes_made" = true ]; then
+            echo "Changes detected. Summary:"
+            for file in "${changed_files[@]}"; do
+              echo "  - $file"
+            done
+          else
+            echo "No deprecated actions found. All workflows are up to date!"
+          fi
+      
+      - name: Create Pull Request
+        if: steps.fix-actions.outputs.changes_made == 'true'
+        run: |
+          branch_name="${{ steps.fix-actions.outputs.branch_name }}"
+          
+          # Create new branch
+          git checkout -b "$branch_name"
+          
+          # Stage all changes
+          git add .github/workflows/
+          
+          # Commit changes
+          git commit -m "chore: update deprecated actions to latest versions
+
+          Automated update of deprecated GitHub Actions:
+          - actions/cache@v1,v2 → actions/cache@v4
+          - actions/checkout@v1,v2 → actions/checkout@v4
+          - actions/setup-node@v1,v2 → actions/setup-node@v4
+          - actions/setup-python@v1,v2 → actions/setup-python@v5
+          
+          This ensures compatibility with the latest GitHub Actions features
+          and security updates."
+          
+          # Push branch
+          git push origin "$branch_name"
+          
+          # Create PR using GitHub CLI (if available) or API
+          if command -v gh &> /dev/null; then
+            gh pr create \
+              --title "chore: update deprecated GitHub Actions to latest versions" \
+              --body "## Automated Update of Deprecated Actions
+
+          This PR automatically updates deprecated GitHub Actions to their latest versions.
+
+          ### Changes Made:
+          - ✅ \`actions/cache@v1\` and \`v2\` → \`actions/cache@v4\`
+          - ✅ \`actions/checkout@v1\` and \`v2\` → \`actions/checkout@v4\`
+          - ✅ \`actions/setup-node@v1\` and \`v2\` → \`actions/setup-node@v4\`
+          - ✅ \`actions/setup-python@v1\` and \`v2\` → \`actions/setup-python@v5\`
+
+          ### Why These Updates?
+          - **Security**: Newer versions include important security patches
+          - **Performance**: Latest versions offer improved caching and performance
+          - **Compatibility**: Ensures compatibility with current GitHub Actions infrastructure
+          - **Deprecation**: Older versions are deprecated and may stop working
+
+          ### Testing
+          Please review the changes and ensure all workflows continue to function correctly.
+
+          ---
+          🤖 This PR was created automatically by the \`auto-fix-deprecated-actions\` workflow." \
+              --base main \
+              --head "$branch_name"
+          else
+            echo "GitHub CLI not available. Please create PR manually from branch: $branch_name"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      
+      - name: Summary
+        run: |
+          if [ "${{ steps.fix-actions.outputs.changes_made }}" = "true" ]; then
+            echo "✅ Deprecated actions found and fixed!"
+            echo "📋 A pull request has been created with the updates."
+          else
+            echo "✅ All workflows are using up-to-date actions!"
+            echo "🎉 No changes needed."
+          fi
