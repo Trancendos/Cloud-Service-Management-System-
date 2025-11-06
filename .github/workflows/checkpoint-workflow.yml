@@ -283,20 +283,20 @@ jobs:
           
           echo "Metrics Summary:"
           echo "  Total Workflow Runs: $WORKFLOW_RUNS"
-          echo "  Success Rate: $(echo "$SUCCESS_RATE * 100" | bc)%"
+          echo "  Success Rate: $(awk "BEGIN {printf \"%.0f\", $SUCCESS_RATE * 100}")%"
           echo "  Average Duration: ${AVG_DURATION}s"
-          echo "  Cache Hit Rate: $(echo "$CACHE_HIT_RATE * 100" | bc)%"
+          echo "  Cache Hit Rate: $(awk "BEGIN {printf \"%.0f\", $CACHE_HIT_RATE * 100}")%"
           
           # Validate metrics are within acceptable ranges
           SUCCESS_THRESHOLD=0.90
-          if (( $(echo "$SUCCESS_RATE >= $SUCCESS_THRESHOLD" | bc -l) )); then
+          if [ "$(awk "BEGIN {print ($SUCCESS_RATE >= $SUCCESS_THRESHOLD)}")" = "1" ]; then
             echo "✅ Success rate above threshold ($SUCCESS_THRESHOLD)"
           else
             echo "⚠️  Success rate below threshold"
           fi
           
           CACHE_THRESHOLD=0.80
-          if (( $(echo "$CACHE_HIT_RATE >= $CACHE_THRESHOLD" | bc -l) )); then
+          if [ "$(awk "BEGIN {print ($CACHE_HIT_RATE >= $CACHE_THRESHOLD)}")" = "1" ]; then
             echo "✅ Cache hit rate above threshold ($CACHE_THRESHOLD)"
           else
             echo "⚠️  Cache hit rate below threshold"

@@ -53,4 +53,4 @@ When contributing:
 1. Use latest stable versions of GitHub Actions
 2. Test changes with the checkpoint workflow
 3. Update documentation as needed
-4. Follow existing patterns and conventions 
+4. Follow existing patterns and conventions. 
