@@ -2,10 +2,12 @@ name: Workflow Run Notifications
 
 on:
   workflow_run:
-    workflows: ["*"]
+    workflows:
+      - "Auto-fix Deprecated Actions"
+      - "Example CI with Cache"
+      - "Test Notifications"
     types:
       - completed
-      - requested
 
 jobs:
   notify:
@@ -111,8 +113,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       
       - name: Send email notification
         if: github.event.action == 'completed' && vars.ENABLE_EMAIL_NOTIFICATIONS == 'true'

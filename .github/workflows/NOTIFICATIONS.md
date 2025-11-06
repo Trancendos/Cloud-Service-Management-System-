@@ -206,6 +206,32 @@ Repository: owner/repo
 
 ## Customization
 
+### Adding New Workflows to Notification System
+
+By default, notifications are configured for these workflows:
+- Auto-fix Deprecated Actions
+- Example CI with Cache
+- Test Notifications
+
+**To add notifications for new workflows:**
+
+1. Edit `.github/workflows/workflow-notifications.yml`
+2. Add your workflow name to the `workflows` list:
+
+```yaml
+on:
+  workflow_run:
+    workflows:
+      - "Auto-fix Deprecated Actions"
+      - "Example CI with Cache"
+      - "Test Notifications"
+      - "Your New Workflow Name"  # Add here
+    types:
+      - completed
+```
+
+**Note:** The notification workflow itself is NOT included in the list to prevent infinite notification loops.
+
 ### Customize Notification Conditions
 
 Edit the workflow files to customize when notifications are sent:
@@ -215,7 +241,7 @@ Edit the workflow files to customize when notifications are sent:
 # Only notify on failures
 if: github.event.workflow_run.conclusion == 'failure'
 
-# Only notify on specific workflows
+# Only notify on specific workflows (alternative to changing the workflows list)
 if: github.event.workflow_run.name == 'CI/CD Pipeline'
 
 # Only notify on main branch

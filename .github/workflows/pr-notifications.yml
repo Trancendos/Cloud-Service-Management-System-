@@ -136,8 +136,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       
       - name: Send email notification
         if: vars.ENABLE_EMAIL_NOTIFICATIONS == 'true'
