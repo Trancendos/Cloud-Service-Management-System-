@@ -1,0 +1,242 @@
+name: Workflow Run Notifications
+
+# Note: To add notifications for new workflows, add the workflow name to the list below.
+# This explicit list prevents infinite loops by excluding this notification workflow itself.
+# See NOTIFICATIONS.md for detailed instructions on adding new workflows.
+
+on:
+  workflow_run:
+    workflows:
+      - "Auto-fix Deprecated Actions"
+      - "Example CI with Cache"
+      - "Test Notifications"
+      # Add new workflow names here
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Get workflow run details
+        id: workflow-details
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_STATUS: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          TRIGGERED_BY: ${{ github.event.workflow_run.triggering_actor.login }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
+          echo "workflow_status=$WORKFLOW_STATUS" >> $GITHUB_OUTPUT
+          echo "workflow_url=$WORKFLOW_URL" >> $GITHUB_OUTPUT
+          echo "triggered_by=$TRIGGERED_BY" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          
+          # Get short commit SHA
+          short_sha=$(echo "$COMMIT_SHA" | cut -c1-7)
+          echo "short_sha=$short_sha" >> $GITHUB_OUTPUT
+          
+          # Determine emoji based on status
+          case "$WORKFLOW_STATUS" in
+            success)
+              echo "status_emoji=✅" >> $GITHUB_OUTPUT
+              ;;
+            failure)
+              echo "status_emoji=❌" >> $GITHUB_OUTPUT
+              ;;
+            cancelled)
+              echo "status_emoji=⚠️" >> $GITHUB_OUTPUT
+              ;;
+            skipped)
+              echo "status_emoji=⏭️" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "status_emoji=🔄" >> $GITHUB_OUTPUT
+              ;;
+          esac
+      
+      - name: Send Slack notification
+        if: vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "${{ steps.workflow-details.outputs.status_emoji }} Workflow Run ${{ steps.workflow-details.outputs.workflow_status }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.workflow-details.outputs.status_emoji }} Workflow: ${{ steps.workflow-details.outputs.workflow_name }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n${{ steps.workflow-details.outputs.workflow_status }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ steps.workflow-details.outputs.branch }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ steps.workflow-details.outputs.triggered_by }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ steps.workflow-details.outputs.short_sha }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run"
+                      },
+                      "url": "${{ steps.workflow-details.outputs.workflow_url }}"
+                    }
+                  ]
+                }
+              ]
+            }
+      
+      - name: Send email notification
+        if: vars.ENABLE_EMAIL_NOTIFICATIONS == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "${{ steps.workflow-details.outputs.status_emoji }} Workflow '${{ steps.workflow-details.outputs.workflow_name }}' - ${{ steps.workflow-details.outputs.workflow_status }}"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.MAIL_FROM }}
+          body: |
+            Workflow Run Notification
+            
+            Workflow: ${{ steps.workflow-details.outputs.workflow_name }}
+            Status: ${{ steps.workflow-details.outputs.workflow_status }}
+            Branch: ${{ steps.workflow-details.outputs.branch }}
+            Triggered by: ${{ steps.workflow-details.outputs.triggered_by }}
+            Commit: ${{ steps.workflow-details.outputs.short_sha }}
+            
+            View the workflow run: ${{ steps.workflow-details.outputs.workflow_url }}
+            
+            Repository: ${{ github.repository }}
+          priority: normal
+      
+      - name: Find associated PR
+        if: vars.ENABLE_GITHUB_COMMENTS == 'true'
+        id: find-pr
+        uses: actions/github-script@v7
+        env:
+          HEAD_BRANCH: ${{ steps.workflow-details.outputs.branch }}
+        with:
+          script: |
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${process.env.HEAD_BRANCH}`
+            });
+            
+            if (pulls.length > 0) {
+              core.setOutput('pr_number', pulls[0].number);
+              core.setOutput('has_pr', 'true');
+            } else {
+              core.setOutput('has_pr', 'false');
+            }
+      
+      - name: Comment on PR with workflow result
+        if: |
+          vars.ENABLE_GITHUB_COMMENTS == 'true' &&
+          steps.find-pr.outputs.has_pr == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.workflow-details.outputs.workflow_status }}';
+            const emoji = '${{ steps.workflow-details.outputs.status_emoji }}';
+            const workflowName = '${{ steps.workflow-details.outputs.workflow_name }}';
+            const workflowUrl = '${{ steps.workflow-details.outputs.workflow_url }}';
+            const shortSha = '${{ steps.workflow-details.outputs.short_sha }}';
+            
+            const body = `${emoji} **Workflow Run Notification**
+            
+            **Workflow:** ${workflowName}
+            **Status:** ${status}
+            **Commit:** ${shortSha}
+            
+            [View Workflow Run](${workflowUrl})`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.find-pr.outputs.pr_number }},
+              body: body
+            });
+      
+      - name: Notification summary
+        env:
+          WORKFLOW_NAME: ${{ steps.workflow-details.outputs.workflow_name }}
+          STATUS_EMOJI: ${{ steps.workflow-details.outputs.status_emoji }}
+          WORKFLOW_STATUS: ${{ steps.workflow-details.outputs.workflow_status }}
+          BRANCH: ${{ steps.workflow-details.outputs.branch }}
+          TRIGGERED_BY: ${{ steps.workflow-details.outputs.triggered_by }}
+          SHORT_SHA: ${{ steps.workflow-details.outputs.short_sha }}
+          SLACK_ENABLED: ${{ vars.ENABLE_SLACK_NOTIFICATIONS }}
+          EMAIL_ENABLED: ${{ vars.ENABLE_EMAIL_NOTIFICATIONS }}
+          GITHUB_COMMENTS_ENABLED: ${{ vars.ENABLE_GITHUB_COMMENTS }}
+          HAS_PR: ${{ steps.find-pr.outputs.has_pr }}
+          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
+        run: |
+          echo "### Workflow Run Notification Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** $WORKFLOW_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $STATUS_EMOJI $WORKFLOW_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** $BRANCH" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** $TRIGGERED_BY" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Notifications sent:**" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$SLACK_ENABLED" = "true" ]; then
+            echo "- ✅ Slack notification" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚪ Slack notification (disabled)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$EMAIL_ENABLED" = "true" ]; then
+            echo "- ✅ Email notification" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚪ Email notification (disabled)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$GITHUB_COMMENTS_ENABLED" = "true" ]; then
+            if [ "$HAS_PR" = "true" ]; then
+              echo "- ✅ GitHub PR comment (PR #$PR_NUMBER)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚪ GitHub PR comment (no associated PR found)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- ⚪ GitHub PR comment (disabled)" >> $GITHUB_STEP_SUMMARY
+          fi

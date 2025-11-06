@@ -1,0 +1,233 @@
+name: Reusable Debug Workflow
+
+on:
+  workflow_call:
+    inputs:
+      debug_level:
+        description: 'Debug level (DEBUG, INFO, WARN, ERROR)'
+        required: false
+        type: string
+        default: 'INFO'
+      verbose:
+        description: 'Enable verbose logging'
+        required: false
+        type: boolean
+        default: false
+      enable_tracing:
+        description: 'Enable step-by-step command tracing'
+        required: false
+        type: boolean
+        default: false
+      collect_logs:
+        description: 'Collect and upload workflow logs as artifact'
+        required: false
+        type: boolean
+        default: true
+      log_retention_days:
+        description: 'Number of days to retain log artifacts'
+        required: false
+        type: number
+        default: 7
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup debugging environment
+        id: setup
+        run: |
+          echo "Setting up debugging environment..."
+
+          # Set log level based on input
+          case "${{ inputs.debug_level }}" in
+            DEBUG) LOG_LEVEL=0 ;;
+            INFO)  LOG_LEVEL=1 ;;
+            WARN)  LOG_LEVEL=2 ;;
+            ERROR) LOG_LEVEL=3 ;;
+            *) LOG_LEVEL=1 ;;
+          esac
+
+          echo "LOG_LEVEL=$LOG_LEVEL" >> $GITHUB_ENV
+          echo "VERBOSE=${{ inputs.verbose }}" >> $GITHUB_ENV
+
+          # Create log directory
+          mkdir -p /tmp/workflow-logs
+          echo "LOG_DIR=/tmp/workflow-logs" >> $GITHUB_ENV
+          echo "LOG_FILE=/tmp/workflow-logs/workflow-debug.log" >> $GITHUB_ENV
+
+          echo "Debug environment configured:"
+          echo "  - Log Level: ${{ inputs.debug_level }} (${LOG_LEVEL})"
+          echo "  - Verbose: ${{ inputs.verbose }}"
+          echo "  - Tracing: ${{ inputs.enable_tracing }}"
+          echo "  - Log Collection: ${{ inputs.collect_logs }}"
+
+      - name: Display system information
+        if: inputs.verbose
+        run: |
+          echo "=== System Information ==="
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Architecture: ${{ runner.arch }}"
+          echo "GitHub Workspace: $GITHUB_WORKSPACE"
+          echo "GitHub Repository: $GITHUB_REPOSITORY"
+          echo "GitHub SHA: $GITHUB_SHA"
+          echo "GitHub Ref: $GITHUB_REF"
+          echo ""
+          echo "=== Disk Usage ==="
+          df -h
+          echo ""
+          echo "=== Memory Usage ==="
+          free -h
+          echo ""
+          echo "=== CPU Info ==="
+          lscpu | grep -E "Model name|CPU\(s\)|Thread"
+
+      - name: Display environment variables
+        if: inputs.verbose
+        run: |
+          echo "=== Environment Variables ==="
+          env | sort
+
+      - name: Display GitHub context
+        if: inputs.verbose
+        run: |
+          echo "=== GitHub Context ==="
+          echo "Event Name: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Run Number: ${{ github.run_number }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Job: ${{ github.job }}"
+          echo "Action: ${{ github.action }}"
+
+      - name: Make logging scripts executable
+        run: |
+          if [ -f scripts/logging.sh ]; then
+            chmod +x scripts/logging.sh
+            echo "✅ Logging library found and made executable"
+          else
+            echo "⚠️  Logging library not found at scripts/logging.sh"
+          fi
+
+          if [ -f scripts/logging_example.sh ]; then
+            chmod +x scripts/logging_example.sh
+            echo "✅ Logging example script found and made executable"
+          fi
+
+      - name: Test logging library
+        if: inputs.verbose
+        run: |
+          if [ -f scripts/logging.sh ]; then
+            echo "=== Testing Logging Library ==="
+            export LOG_LEVEL=${LOG_LEVEL}
+            export VERBOSE=${{ inputs.verbose }}
+            source scripts/logging.sh
+
+            log_info "Logging library test started"
+            log_debug "Debug message test"
+            log_success "Logging library is working correctly"
+          else
+            echo "Logging library not available, skipping test"
+          fi
+
+      - name: Enable step tracing
+        if: inputs.enable_tracing
+        run: |
+          echo "Enabling bash tracing for debugging..."
+          echo "BASH_XTRACEFD=1" >> $GITHUB_ENV
+          set -x
+
+      - name: Collect workflow logs
+        if: always() && inputs.collect_logs
+        run: |
+          echo "=== Collecting Workflow Logs ==="
+
+          LOG_DIR=/tmp/workflow-logs
+
+          # Save environment variables
+          env | sort > ${LOG_DIR}/environment.txt
+
+          # Save GitHub context
+          cat > ${LOG_DIR}/github-context.txt << 'EOF'
+          Event Name: ${{ github.event_name }}
+          Actor: ${{ github.actor }}
+          Repository: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          Ref: ${{ github.ref }}
+          Workflow: ${{ github.workflow }}
+          Run ID: ${{ github.run_id }}
+          Run Number: ${{ github.run_number }}
+          EOF
+
+          # Save system info
+          {
+            echo "=== System Information ==="
+            uname -a
+            echo ""
+            echo "=== Disk Usage ==="
+            df -h
+            echo ""
+            echo "=== Memory Usage ==="
+            free -h
+          } > ${LOG_DIR}/system-info.txt
+
+          # Create summary
+          cat > ${LOG_DIR}/summary.txt << EOF
+          Workflow Debug Summary
+          ======================
+
+          Workflow: ${{ github.workflow }}
+          Run ID: ${{ github.run_id }}
+          Run Number: ${{ github.run_number }}
+          Status: ${{ job.status }}
+
+          Debug Settings:
+          - Log Level: ${{ inputs.debug_level }}
+          - Verbose: ${{ inputs.verbose }}
+          - Tracing: ${{ inputs.enable_tracing }}
+
+          Repository: ${{ github.repository }}
+          Branch/Tag: ${{ github.ref }}
+          Commit: ${{ github.sha }}
+
+          Triggered by: ${{ github.actor }}
+          Event: ${{ github.event_name }}
+
+          Runner:
+          - OS: ${{ runner.os }}
+          - Architecture: ${{ runner.arch }}
+          EOF
+
+          echo "✅ Workflow logs collected in ${LOG_DIR}"
+          ls -la ${LOG_DIR}
+
+      - name: Upload debug logs
+        if: always() && inputs.collect_logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-debug-logs-${{ github.run_id }}
+          path: /tmp/workflow-logs/
+          retention-days: ${{ inputs.log_retention_days }}
+
+      - name: Debug summary
+        if: always()
+        run: |
+          echo "=== Debugging Workflow Summary ==="
+          echo "✅ Debugging workflow completed"
+          echo ""
+          echo "Configuration:"
+          echo "  - Debug Level: ${{ inputs.debug_level }}"
+          echo "  - Verbose Mode: ${{ inputs.verbose }}"
+          echo "  - Step Tracing: ${{ inputs.enable_tracing }}"
+          echo "  - Log Collection: ${{ inputs.collect_logs }}"
+          echo ""
+          if [ "${{ inputs.collect_logs }}" = "true" ]; then
+            artifact_name="workflow-debug-logs-${{ github.run_id }}"
+            echo "📦 Debug logs uploaded as artifact: ${artifact_name}"
+            echo "   Retention: ${{ inputs.log_retention_days }} days"
+          fi
