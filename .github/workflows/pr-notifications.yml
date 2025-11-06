@@ -11,6 +11,7 @@ on:
 
 jobs:
   notify:
+    timeout-minutes: 40
     runs-on: ubuntu-latest
     permissions:
       contents: read
