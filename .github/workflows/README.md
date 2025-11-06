@@ -90,6 +90,25 @@ This directory contains GitHub Actions workflows for the Cloud Service Managemen
 - ✅ Direct links to pull requests
 - ✅ Configurable via repository variables
 
+### 5. Test Notifications (`test-notifications.yml`)
+
+**Purpose**: Test workflow to verify notification system configuration.
+
+**Triggers**:
+- **Manual**: workflow_dispatch with configurable success/failure outcome
+
+**What It Does**:
+1. Runs a simple test job
+2. Can simulate success or failure based on user input
+3. Triggers the notification system
+4. Helps verify notification configuration
+
+**Benefits**:
+- ✅ Easy way to test notification setup
+- ✅ Verify Slack, email, and GitHub comment notifications
+- ✅ No need to wait for real workflow events
+- ✅ Configurable outcome for testing both success and failure scenarios
+
 ## Best Practices
 
 ### Using actions/cache@v4
@@ -131,7 +150,11 @@ The `auto-fix-deprecated-actions.yml` workflow handles most maintenance automati
 
 ## Automated Notifications
 
-The repository includes a comprehensive notification system for workflows and PRs. See **[NOTIFICATIONS.md](./NOTIFICATIONS.md)** for detailed setup instructions.
+The repository includes a comprehensive notification system for workflows and PRs. 
+
+**📚 Documentation:**
+- **[QUICKSTART.md](./QUICKSTART.md)** - Get started in 3 simple steps
+- **[NOTIFICATIONS.md](./NOTIFICATIONS.md)** - Detailed setup and configuration guide
 
 **Quick Start:**
 1. Enable notification channels via repository variables:
