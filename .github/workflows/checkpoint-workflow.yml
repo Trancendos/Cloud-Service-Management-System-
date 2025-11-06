@@ -15,6 +15,8 @@ jobs:
   checkpoint-initialization:
     name: "Checkpoint 1: Initialize with Dummy Data"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       service_accounts: ${{ steps.load-data.outputs.service_accounts }}
       test_scenarios: ${{ steps.load-data.outputs.test_scenarios }}
@@ -93,6 +95,8 @@ jobs:
   checkpoint-service-account-validation:
     name: "Checkpoint 2: Validate Service Accounts"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: checkpoint-initialization
     
     steps:
@@ -181,6 +185,8 @@ jobs:
   checkpoint-workflow-simulation:
     name: "Checkpoint 3: Simulate Workflow Execution"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: checkpoint-service-account-validation
     
     steps:
@@ -263,6 +269,8 @@ jobs:
   checkpoint-metrics-validation:
     name: "Checkpoint 4: Validate Metrics"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: checkpoint-workflow-simulation
     
     steps:
@@ -336,6 +344,8 @@ jobs:
   checkpoint-final-report:
     name: "Checkpoint 5: Final Report"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [checkpoint-initialization, checkpoint-service-account-validation, checkpoint-workflow-simulation, checkpoint-metrics-validation]
     
     steps:
