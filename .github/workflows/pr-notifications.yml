@@ -1,0 +1,206 @@
+name: Pull Request Notifications
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - closed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Get PR details
+        id: pr-details
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_STATE: ${{ github.event.pull_request.state }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "pr_author=$PR_AUTHOR" >> $GITHUB_OUTPUT
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "pr_action=$PR_ACTION" >> $GITHUB_OUTPUT
+          echo "pr_state=$PR_STATE" >> $GITHUB_OUTPUT
+          echo "pr_draft=$PR_DRAFT" >> $GITHUB_OUTPUT
+          echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
+          echo "head_branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
+          
+          # Get short commit SHA
+          short_sha=$(echo "$HEAD_SHA" | cut -c1-7)
+          echo "short_sha=$short_sha" >> $GITHUB_OUTPUT
+          
+          # Determine emoji and action text based on PR action
+          case "$PR_ACTION" in
+            opened)
+              echo "action_emoji=🚀" >> $GITHUB_OUTPUT
+              echo "action_text=opened" >> $GITHUB_OUTPUT
+              ;;
+            reopened)
+              echo "action_emoji=🔄" >> $GITHUB_OUTPUT
+              echo "action_text=reopened" >> $GITHUB_OUTPUT
+              ;;
+            synchronize)
+              echo "action_emoji=🔄" >> $GITHUB_OUTPUT
+              echo "action_text=updated" >> $GITHUB_OUTPUT
+              ;;
+            ready_for_review)
+              echo "action_emoji=👀" >> $GITHUB_OUTPUT
+              echo "action_text=ready for review" >> $GITHUB_OUTPUT
+              ;;
+            closed)
+              if [ "$PR_MERGED" = "true" ]; then
+                echo "action_emoji=✅" >> $GITHUB_OUTPUT
+                echo "action_text=merged" >> $GITHUB_OUTPUT
+              else
+                echo "action_emoji=❌" >> $GITHUB_OUTPUT
+                echo "action_text=closed without merging" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            *)
+              echo "action_emoji=📝" >> $GITHUB_OUTPUT
+              echo "action_text=$PR_ACTION" >> $GITHUB_OUTPUT
+              ;;
+          esac
+      
+      - name: Send Slack notification
+        if: vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "${{ steps.pr-details.outputs.action_emoji }} PR #${{ steps.pr-details.outputs.pr_number }} ${{ steps.pr-details.outputs.action_text }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.pr-details.outputs.action_emoji }} Pull Request #${{ steps.pr-details.outputs.pr_number }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ steps.pr-details.outputs.pr_title }}*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Action:*\n${{ steps.pr-details.outputs.action_text }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Author:*\n${{ steps.pr-details.outputs.pr_author }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ steps.pr-details.outputs.head_branch }} → ${{ steps.pr-details.outputs.base_branch }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ steps.pr-details.outputs.short_sha }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Pull Request"
+                      },
+                      "url": "${{ steps.pr-details.outputs.pr_url }}"
+                    }
+                  ]
+                }
+              ]
+            }
+      
+      - name: Send email notification
+        if: vars.ENABLE_EMAIL_NOTIFICATIONS == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "${{ steps.pr-details.outputs.action_emoji }} PR #${{ steps.pr-details.outputs.pr_number }}: ${{ steps.pr-details.outputs.pr_title }}"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: ${{ secrets.MAIL_FROM }}
+          body: |
+            Pull Request Notification
+            
+            PR #${{ steps.pr-details.outputs.pr_number }}: ${{ steps.pr-details.outputs.pr_title }}
+            Action: ${{ steps.pr-details.outputs.action_text }}
+            Author: ${{ steps.pr-details.outputs.pr_author }}
+            Branch: ${{ steps.pr-details.outputs.head_branch }} → ${{ steps.pr-details.outputs.base_branch }}
+            Commit: ${{ steps.pr-details.outputs.short_sha }}
+            State: ${{ steps.pr-details.outputs.pr_state }}
+            Draft: ${{ steps.pr-details.outputs.pr_draft }}
+            
+            View the pull request: ${{ steps.pr-details.outputs.pr_url }}
+            
+            Repository: ${{ github.repository }}
+          priority: normal
+      
+      - name: Notification summary
+        env:
+          PR_NUMBER: ${{ steps.pr-details.outputs.pr_number }}
+          PR_TITLE: ${{ steps.pr-details.outputs.pr_title }}
+          ACTION_EMOJI: ${{ steps.pr-details.outputs.action_emoji }}
+          ACTION_TEXT: ${{ steps.pr-details.outputs.action_text }}
+          PR_AUTHOR: ${{ steps.pr-details.outputs.pr_author }}
+          HEAD_BRANCH: ${{ steps.pr-details.outputs.head_branch }}
+          BASE_BRANCH: ${{ steps.pr-details.outputs.base_branch }}
+          SHORT_SHA: ${{ steps.pr-details.outputs.short_sha }}
+          SLACK_ENABLED: ${{ vars.ENABLE_SLACK_NOTIFICATIONS }}
+          EMAIL_ENABLED: ${{ vars.ENABLE_EMAIL_NOTIFICATIONS }}
+        run: |
+          echo "### Pull Request Notification Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR Number:** #$PR_NUMBER" >> $GITHUB_STEP_SUMMARY
+          echo "**Title:** $PR_TITLE" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** $ACTION_EMOJI $ACTION_TEXT" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** $PR_AUTHOR" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** $HEAD_BRANCH → $BASE_BRANCH" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Notifications sent:**" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$SLACK_ENABLED" = "true" ]; then
+            echo "- ✅ Slack notification" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚪ Slack notification (disabled)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$EMAIL_ENABLED" = "true" ]; then
+            echo "- ✅ Email notification" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚪ Email notification (disabled)" >> $GITHUB_STEP_SUMMARY
+          fi
