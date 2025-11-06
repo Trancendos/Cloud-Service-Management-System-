@@ -1,0 +1,53 @@
+name: Test Notifications
+
+# This workflow can be used to test the notification system
+# Run it manually from the Actions tab to trigger notifications
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_outcome:
+        description: 'Test outcome (success or failure)'
+        required: true
+        default: 'success'
+        type: choice
+        options:
+          - success
+          - failure
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Test notification trigger
+        run: |
+          echo "Testing notification system..."
+          echo "Selected outcome: ${{ github.event.inputs.test_outcome }}"
+          
+          if [ "${{ github.event.inputs.test_outcome }}" = "failure" ]; then
+            echo "Simulating workflow failure for notification testing"
+            exit 1
+          else
+            echo "✅ Test completed successfully!"
+            echo "This will trigger a success notification"
+          fi
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Notification Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Outcome:** ${{ github.event.inputs.test_outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "If notifications are configured, you should receive:" >> $GITHUB_STEP_SUMMARY
+          echo "- Slack notification (if enabled)" >> $GITHUB_STEP_SUMMARY
+          echo "- Email notification (if enabled)" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub comment (if enabled and PR exists)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check your configured notification channels!" >> $GITHUB_STEP_SUMMARY
