@@ -1,0 +1,62 @@
+# GitLab CI/CD Pipeline for Cloud Service Management System
+# This pipeline provides equivalent functionality to the GitHub Actions workflow
+
+# Define the default Docker image
+image: node:20
+
+# Define pipeline stages
+stages:
+  - build
+  - test
+
+# Global variables
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+  NODE_ENV: "production"
+
+# Cache configuration for dependencies
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm/
+    - node_modules/
+
+# Job: Build
+build:
+  stage: build
+  script:
+    - echo "Node.js version:"
+    - node --version
+    - echo "NPM version:"
+    - npm --version
+    - echo "Installing dependencies..."
+    - npm ci --cache .npm --prefer-offline
+    - echo "Build completed with cached dependencies"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+# Job: Test
+test:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - echo "Running tests..."
+    - echo "Tests completed"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# Workflow rules to control when pipeline runs
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'

@@ -1,0 +1,54 @@
+{
+  "test_scenarios": [
+    {
+      "scenario_id": "scenario-001",
+      "name": "Basic Workflow Execution",
+      "description": "Tests basic workflow execution with dummy data",
+      "workflow_type": "ci",
+      "expected_steps": ["checkout", "setup", "build", "test"],
+      "expected_duration_seconds": 120,
+      "expected_status": "success"
+    },
+    {
+      "scenario_id": "scenario-002",
+      "name": "Caching Mechanism Test",
+      "description": "Validates caching functionality with dummy dependencies",
+      "workflow_type": "cache_test",
+      "cache_paths": ["~/.npm", "node_modules", ".cache"],
+      "expected_cache_hit": true,
+      "expected_status": "success"
+    },
+    {
+      "scenario_id": "scenario-003",
+      "name": "Multi-Stage Deployment",
+      "description": "Simulates multi-stage deployment with checkpoints",
+      "workflow_type": "deployment",
+      "stages": ["build", "test", "stage", "production"],
+      "checkpoint_validations": ["health_check", "smoke_test", "rollback_ready"],
+      "expected_status": "success"
+    }
+  ],
+  "dummy_repositories": [
+    {
+      "name": "test-repo-01",
+      "description": "Dummy repository for testing CI workflows",
+      "language": "javascript",
+      "has_tests": true,
+      "dependencies_count": 15
+    },
+    {
+      "name": "test-repo-02",
+      "description": "Dummy repository for testing deployment workflows",
+      "language": "python",
+      "has_tests": true,
+      "dependencies_count": 23
+    }
+  ],
+  "dummy_metrics": {
+    "workflow_runs": 100,
+    "success_rate": 0.95,
+    "average_duration_seconds": 180,
+    "cache_hit_rate": 0.85,
+    "last_updated": "2025-01-15T12:00:00Z"
+  }
+}
