@@ -1,0 +1,20 @@
+{
+  "name": "test-config",
+  "version": "1.0.0",
+  "description": "Example configuration file for testing AI Data Checker",
+  "settings": {
+    "enableFeatureX": true,
+    "maxRetries": 3,
+    "timeout": 5000
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "testdb"
+  },
+  "features": [
+    "feature1",
+    "feature2",
+    "feature3"
+  ]
+}
