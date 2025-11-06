@@ -41,23 +41,18 @@ jobs:
           case "${{ github.event.workflow_run.conclusion }}" in
             success)
               echo "status_emoji=✅" >> $GITHUB_OUTPUT
-              echo "status_color=good" >> $GITHUB_OUTPUT
               ;;
             failure)
               echo "status_emoji=❌" >> $GITHUB_OUTPUT
-              echo "status_color=danger" >> $GITHUB_OUTPUT
               ;;
             cancelled)
               echo "status_emoji=⚠️" >> $GITHUB_OUTPUT
-              echo "status_color=warning" >> $GITHUB_OUTPUT
               ;;
             skipped)
               echo "status_emoji=⏭️" >> $GITHUB_OUTPUT
-              echo "status_color=#808080" >> $GITHUB_OUTPUT
               ;;
             *)
               echo "status_emoji=🔄" >> $GITHUB_OUTPUT
-              echo "status_color=#808080" >> $GITHUB_OUTPUT
               ;;
           esac
       

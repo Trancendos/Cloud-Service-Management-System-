@@ -42,38 +42,31 @@ jobs:
             opened)
               echo "action_emoji=🚀" >> $GITHUB_OUTPUT
               echo "action_text=opened" >> $GITHUB_OUTPUT
-              echo "color=good" >> $GITHUB_OUTPUT
               ;;
             reopened)
               echo "action_emoji=🔄" >> $GITHUB_OUTPUT
               echo "action_text=reopened" >> $GITHUB_OUTPUT
-              echo "color=warning" >> $GITHUB_OUTPUT
               ;;
             synchronize)
               echo "action_emoji=🔄" >> $GITHUB_OUTPUT
               echo "action_text=updated" >> $GITHUB_OUTPUT
-              echo "color=#808080" >> $GITHUB_OUTPUT
               ;;
             ready_for_review)
               echo "action_emoji=👀" >> $GITHUB_OUTPUT
               echo "action_text=ready for review" >> $GITHUB_OUTPUT
-              echo "color=good" >> $GITHUB_OUTPUT
               ;;
             closed)
               if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
                 echo "action_emoji=✅" >> $GITHUB_OUTPUT
                 echo "action_text=merged" >> $GITHUB_OUTPUT
-                echo "color=good" >> $GITHUB_OUTPUT
               else
                 echo "action_emoji=❌" >> $GITHUB_OUTPUT
                 echo "action_text=closed without merging" >> $GITHUB_OUTPUT
-                echo "color=danger" >> $GITHUB_OUTPUT
               fi
               ;;
             *)
               echo "action_emoji=📝" >> $GITHUB_OUTPUT
               echo "action_text=${{ github.event.action }}" >> $GITHUB_OUTPUT
-              echo "color=#808080" >> $GITHUB_OUTPUT
               ;;
           esac
       
