@@ -1,0 +1,59 @@
+# Azure DevOps Pipeline for Cloud Service Management System
+# This pipeline provides equivalent functionality to the GitHub Actions workflow
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - '*.md'
+      - '.github/**'
+      - '.gitlab-ci.yml'
+      - 'cloudbuild.yaml'
+      - 'buildspec.yml'
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  NODE_VERSION: '20.x'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build'
+        steps:
+          - checkout: self
+            displayName: 'Checkout code'
+
+          - task: NodeTool@0
+            displayName: 'Setup Node.js'
+            inputs:
+              versionSpec: $(NODE_VERSION)
+
+          - task: Cache@2
+            displayName: 'Cache npm dependencies'
+            inputs:
+              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: |
+                $(Pipeline.Workspace)/.npm
+                node_modules
+
+          - script: |
+              echo "Build completed with cached dependencies"
+            displayName: 'Example build step'
+
+          - script: |
+              echo "Running tests..."
+            displayName: 'Run tests'
+            condition: succeededOrFailed()

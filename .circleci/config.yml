@@ -1,0 +1,71 @@
+# CircleCI configuration for Cloud Service Management System
+# This configuration provides equivalent functionality to the GitHub Actions workflow
+
+version: 2.1
+
+# Define orbs (reusable packages of configuration)
+orbs:
+  node: circleci/node@5.1.0
+
+# Define reusable executors
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:20.11
+    working_directory: ~/project
+
+# Define jobs
+jobs:
+  build-and-test:
+    executor: node-executor
+    steps:
+      # Checkout code
+      - checkout
+      
+      # Restore cached dependencies
+      - restore_cache:
+          keys:
+            - node-deps-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - node-deps-v1-{{ .Branch }}-
+            - node-deps-v1-
+      
+      # Setup Node.js (already in the Docker image)
+      - run:
+          name: Check Node.js version
+          command: |
+            node --version
+            npm --version
+      
+      # Install dependencies
+      - run:
+          name: Install dependencies
+          command: npm ci
+      
+      # Save cache
+      - save_cache:
+          key: node-deps-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+            - node_modules
+      
+      # Build step
+      - run:
+          name: Build
+          command: echo "Build completed with cached dependencies"
+      
+      # Test step
+      - run:
+          name: Run tests
+          command: echo "Running tests..."
+
+# Define workflows
+workflows:
+  version: 2
+  build-and-test-workflow:
+    jobs:
+      - build-and-test:
+          filters:
+            branches:
+              only:
+                - main
+                - /^pull\/.*$/
