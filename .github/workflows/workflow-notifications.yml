@@ -1,11 +1,16 @@
 name: Workflow Run Notifications
 
+# Note: To add notifications for new workflows, add the workflow name to the list below.
+# This explicit list prevents infinite loops by excluding this notification workflow itself.
+# See NOTIFICATIONS.md for detailed instructions on adding new workflows.
+
 on:
   workflow_run:
     workflows:
       - "Auto-fix Deprecated Actions"
       - "Example CI with Cache"
       - "Test Notifications"
+      # Add new workflow names here
     types:
       - completed
 
@@ -44,7 +49,7 @@ jobs:
           echo "short_sha=$short_sha" >> $GITHUB_OUTPUT
           
           # Determine emoji based on status
-          case "${{ github.event.workflow_run.conclusion }}" in
+          case "$WORKFLOW_STATUS" in
             success)
               echo "status_emoji=✅" >> $GITHUB_OUTPUT
               ;;
@@ -198,6 +203,11 @@ jobs:
           BRANCH: ${{ steps.workflow-details.outputs.branch }}
           TRIGGERED_BY: ${{ steps.workflow-details.outputs.triggered_by }}
           SHORT_SHA: ${{ steps.workflow-details.outputs.short_sha }}
+          SLACK_ENABLED: ${{ vars.ENABLE_SLACK_NOTIFICATIONS }}
+          EMAIL_ENABLED: ${{ vars.ENABLE_EMAIL_NOTIFICATIONS }}
+          GITHUB_COMMENTS_ENABLED: ${{ vars.ENABLE_GITHUB_COMMENTS }}
+          HAS_PR: ${{ steps.find-pr.outputs.has_pr }}
+          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
         run: |
           echo "### Workflow Run Notification Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -209,21 +219,21 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Notifications sent:**" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ vars.ENABLE_SLACK_NOTIFICATIONS }}" = "true" ]; then
+          if [ "$SLACK_ENABLED" = "true" ]; then
             echo "- ✅ Slack notification" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ⚪ Slack notification (disabled)" >> $GITHUB_STEP_SUMMARY
           fi
           
-          if [ "${{ vars.ENABLE_EMAIL_NOTIFICATIONS }}" = "true" ]; then
+          if [ "$EMAIL_ENABLED" = "true" ]; then
             echo "- ✅ Email notification" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ⚪ Email notification (disabled)" >> $GITHUB_STEP_SUMMARY
           fi
           
-          if [ "${{ vars.ENABLE_GITHUB_COMMENTS }}" = "true" ]; then
-            if [ "${{ steps.find-pr.outputs.has_pr }}" = "true" ]; then
-              echo "- ✅ GitHub PR comment (PR #${{ steps.find-pr.outputs.pr_number }})" >> $GITHUB_STEP_SUMMARY
+          if [ "$GITHUB_COMMENTS_ENABLED" = "true" ]; then
+            if [ "$HAS_PR" = "true" ]; then
+              echo "- ✅ GitHub PR comment (PR #$PR_NUMBER)" >> $GITHUB_STEP_SUMMARY
             else
               echo "- ⚪ GitHub PR comment (no associated PR found)" >> $GITHUB_STEP_SUMMARY
             fi
