@@ -155,8 +155,8 @@ jobs:
             echo "Validating structure: $file"
             
             # Check for required top-level keys using simple validation
-            # Note: YAML parses 'on' keyword as boolean True, so we check for both
-            has_on=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('on' in w or True in w)" 2>/dev/null)
+            # Note: YAML parses 'on:' keyword as boolean True key, not string 'on'
+            has_trigger=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print(True in w or 'on' in w)" 2>/dev/null)
             has_jobs=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('jobs' in w)" 2>/dev/null)
             has_name=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('name' in w)" 2>/dev/null)
             
@@ -164,7 +164,7 @@ jobs:
               echo "  ⚠️  WARNING: Missing 'name' field"
             fi
             
-            if [ "$has_on" != "True" ]; then
+            if [ "$has_trigger" != "True" ]; then
               echo "  ❌ ERROR: Missing 'on' field (required)"
               validation_failed=true
             fi
@@ -183,13 +183,14 @@ jobs:
                 action="${action//\'/}"
                 
                 # Validate action format (owner/repo@ref or ./path or docker://)
-                # Note: ref can include forward slashes for branch names
-                if [[ ! "$action" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+@[a-zA-Z0-9._/-]+$ ]] && [[ ! "$action" =~ ^\./.*$ ]] && [[ ! "$action" =~ ^docker:// ]]; then
+                # Note: ref can include forward slashes for branch names, repos can have dots
+                if [[ ! "$action" =~ ^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+@[a-zA-Z0-9._/-]+$ ]] && [[ ! "$action" =~ ^\./.*$ ]] && [[ ! "$action" =~ ^docker:// ]]; then
                   echo "  ⚠️  WARNING: Unusual action format: $action"
                 fi
               fi
             done < "$file"
             
+            # Print success only if no validation errors for this file
             if [ "$validation_failed" = false ]; then
               echo "  ✅ Workflow structure is valid"
             fi
