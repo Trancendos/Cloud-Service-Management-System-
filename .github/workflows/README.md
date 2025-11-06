@@ -38,6 +38,58 @@ This directory contains GitHub Actions workflows for the Cloud Service Managemen
 - Uses `actions/setup-node@v4` for Node.js setup
 - Provides a template for CI workflows
 
+### 3. Workflow Run Notifications (`workflow-notifications.yml`)
+
+**Purpose**: Automatically sends notifications when workflows complete.
+
+**Triggers**:
+- **Workflow Completion**: Any workflow in the repository
+- **Workflow Requested**: When workflows start running
+
+**What It Does**:
+1. Detects workflow completion (success, failure, cancelled, skipped)
+2. Extracts workflow details (name, status, branch, commit, user)
+3. Sends notifications to configured channels:
+   - 🔔 **Slack**: Rich formatted messages with action buttons
+   - 📧 **Email**: Detailed email notifications
+   - 💬 **GitHub Comments**: Automated comments on associated PRs
+4. Provides job summary with notification status
+
+**Benefits**:
+- ✅ Instant notifications on workflow completion
+- ✅ Multiple notification channels (Slack, Email, GitHub)
+- ✅ Detailed context (status, branch, commit, user)
+- ✅ Direct links to workflow runs
+- ✅ Automatic PR comments for workflow results
+- ✅ Configurable via repository variables
+
+### 4. Pull Request Notifications (`pr-notifications.yml`)
+
+**Purpose**: Automatically sends notifications when PRs are created or updated.
+
+**Triggers**:
+- **PR Opened**: When a new PR is created
+- **PR Reopened**: When a closed PR is reopened
+- **PR Synchronized**: When new commits are pushed to PR
+- **PR Ready for Review**: When PR is marked ready for review
+- **PR Closed**: When PR is closed or merged
+
+**What It Does**:
+1. Detects PR events with appropriate context
+2. Extracts PR details (number, title, author, branches)
+3. Sends notifications to configured channels:
+   - 🔔 **Slack**: Rich formatted PR notifications
+   - 📧 **Email**: Detailed email notifications
+4. Provides job summary with notification status
+
+**Benefits**:
+- ✅ Instant notifications on PR events
+- ✅ Track PR lifecycle (opened, updated, merged)
+- ✅ Multiple notification channels
+- ✅ Detailed PR context and metadata
+- ✅ Direct links to pull requests
+- ✅ Configurable via repository variables
+
 ## Best Practices
 
 ### Using actions/cache@v4
@@ -77,6 +129,30 @@ The `auto-fix-deprecated-actions.yml` workflow handles most maintenance automati
 2. **Review PRs**: Check automated PRs for any workflow-specific considerations
 3. **Add More Actions**: Extend the workflow to detect other deprecated actions
 
+## Automated Notifications
+
+The repository includes a comprehensive notification system for workflows and PRs. See **[NOTIFICATIONS.md](./NOTIFICATIONS.md)** for detailed setup instructions.
+
+**Quick Start:**
+1. Enable notification channels via repository variables:
+   - `ENABLE_SLACK_NOTIFICATIONS=true`
+   - `ENABLE_EMAIL_NOTIFICATIONS=true`
+   - `ENABLE_GITHUB_COMMENTS=true`
+
+2. Configure required secrets (see NOTIFICATIONS.md for details):
+   - **Slack**: `SLACK_WEBHOOK_URL`
+   - **Email**: `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `NOTIFICATION_EMAIL`
+   - **GitHub**: No additional secrets needed (uses `GITHUB_TOKEN`)
+
+3. Notifications work automatically once configured!
+
+**Supported Notifications:**
+- ✅ Workflow completion (success, failure, cancelled)
+- ✅ PR created, updated, merged, or closed
+- ✅ Slack rich messages with action buttons
+- ✅ Email notifications with full details
+- ✅ GitHub PR comments for workflow results
+
 ## Adding New Workflows
 
 When creating new workflows:
@@ -84,6 +160,7 @@ When creating new workflows:
 2. Use the `example-ci.yml` as a reference template
 3. Test workflows in a feature branch before merging
 4. The auto-fix workflow will catch any deprecated versions
+5. New workflows will automatically trigger notifications when configured
 
 ## Troubleshooting
 
