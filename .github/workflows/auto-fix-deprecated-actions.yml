@@ -112,6 +112,7 @@ jobs:
             echo "No deprecated actions found. All workflows are up to date!"
           fi
       
+
       - name: Validate YAML syntax
         if: steps.fix-actions.outputs.changes_made == 'true'
         run: |
@@ -153,17 +154,22 @@ jobs:
           for file in $workflow_files; do
             echo "Validating structure: $file"
             
-            # Check for required top-level keys
-            if ! grep -q "^name:" "$file"; then
+            # Check for required top-level keys using simple validation
+            # Note: YAML parses 'on' keyword as boolean True, so we check for both
+            has_on=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('on' in w or True in w)" 2>/dev/null)
+            has_jobs=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('jobs' in w)" 2>/dev/null)
+            has_name=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('name' in w)" 2>/dev/null)
+            
+            if [ "$has_name" != "True" ]; then
               echo "  ⚠️  WARNING: Missing 'name' field"
             fi
             
-            if ! grep -q "^on:" "$file"; then
+            if [ "$has_on" != "True" ]; then
               echo "  ❌ ERROR: Missing 'on' field (required)"
               validation_failed=true
             fi
             
-            if ! grep -q "^jobs:" "$file"; then
+            if [ "$has_jobs" != "True" ]; then
               echo "  ❌ ERROR: Missing 'jobs' field (required)"
               validation_failed=true
             fi
@@ -176,8 +182,9 @@ jobs:
                 action="${action//\"/}"
                 action="${action//\'/}"
                 
-                # Validate action format (should be owner/repo@ref or ./path)
-                if [[ ! "$action" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+@[a-zA-Z0-9._-]+$ ]] && [[ ! "$action" =~ ^\./.*$ ]] && [[ ! "$action" =~ ^docker:// ]]; then
+                # Validate action format (owner/repo@ref or ./path or docker://)
+                # Note: ref can include forward slashes for branch names
+                if [[ ! "$action" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+@[a-zA-Z0-9._/-]+$ ]] && [[ ! "$action" =~ ^\./.*$ ]] && [[ ! "$action" =~ ^docker:// ]]; then
                   echo "  ⚠️  WARNING: Unusual action format: $action"
                 fi
               fi
@@ -215,7 +222,6 @@ jobs:
             echo "Checking if $action@$version exists..."
             
             # Use GitHub API to check if the tag/release exists
-            repo_path="https://github.com/$action"
             if curl -sSf -o /dev/null "https://github.com/$action/releases/tag/$version" 2>/dev/null || \
                curl -sSf -o /dev/null "https://github.com/$action/tree/$version" 2>/dev/null; then
               echo "  ✅ $action@$version exists"
