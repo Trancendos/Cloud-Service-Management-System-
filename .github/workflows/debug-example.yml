@@ -28,6 +28,8 @@ on:
 jobs:
   # Call the reusable debug workflow
   debug-workflow:
+    permissions:
+      contents: read
     uses: ./.github/workflows/reusable-debug.yml
     with:
       debug_level: ${{ inputs.debug_level || 'INFO' }}
@@ -40,6 +42,8 @@ jobs:
   example-with-logging:
     runs-on: ubuntu-latest
     needs: debug-workflow
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
