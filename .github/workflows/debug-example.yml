@@ -1,0 +1,118 @@
+name: Debug Workflow Example
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug_level:
+        description: 'Debug level'
+        required: false
+        type: choice
+        options:
+          - DEBUG
+          - INFO
+          - WARN
+          - ERROR
+        default: 'INFO'
+      verbose:
+        description: 'Enable verbose logging'
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+      - 'debug/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # Call the reusable debug workflow
+  debug-workflow:
+    uses: ./.github/workflows/reusable-debug.yml
+    with:
+      debug_level: ${{ inputs.debug_level || 'INFO' }}
+      verbose: ${{ inputs.verbose || false }}
+      enable_tracing: false
+      collect_logs: true
+      log_retention_days: 7
+
+  # Example job with logging
+  example-with-logging:
+    runs-on: ubuntu-latest
+    needs: debug-workflow
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup logging
+        run: |
+          # Make logging script executable
+          chmod +x scripts/logging.sh
+
+          # Configure logging
+          export LOG_LEVEL=0  # DEBUG
+          export VERBOSE=true
+          export LOG_FILE=/tmp/example.log
+
+      - name: Example operations with logging
+        run: |
+          # Source the logging library
+          source scripts/logging.sh
+
+          log_section "Example Operations"
+
+          # Example 1: Basic logging
+          log_info "Starting example operations..."
+          log_debug "This is a debug message"
+
+          # Example 2: Command execution with timing
+          log_info "Executing commands with timing..."
+          log_exec ls -la
+          log_exec pwd
+
+          # Example 3: Performance monitoring
+          timer_start "operation"
+          sleep 2
+          duration=$(timer_stop "operation")
+          log_success "Operation completed in ${duration}s"
+
+          # Example 4: Variable debugging
+          EXAMPLE_VAR="test_value"
+          log_vars EXAMPLE_VAR GITHUB_REPOSITORY GITHUB_SHA
+
+          # Example 5: Assertions
+          assert "[ -d .github ]" ".github directory should exist"
+          assert "[ -f README.md ]" "README.md should exist"
+
+          log_success "All example operations completed successfully!"
+
+      - name: Demonstrate error handling
+        run: |
+          source scripts/logging.sh
+
+          log_section "Error Handling Example"
+
+          # Set up error trap
+          setup_error_trap
+
+          # Simulate a workflow that handles errors
+          log_info "Attempting operation that might fail..."
+
+          # This will succeed
+          log_exec echo "This operation succeeds"
+
+          # Demonstrate recovery from error
+          if ! log_exec false 2>/dev/null; then
+            log_warn "Operation failed, but we handled it gracefully"
+          fi
+
+          log_success "Error handling demonstrated successfully"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-logs
+          path: /tmp/example.log
+          retention-days: 7
