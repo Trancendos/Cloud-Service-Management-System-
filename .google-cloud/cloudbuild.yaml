@@ -1,15 +1,15 @@
 # Google Cloud Build configuration for Cloud Service Management System
-# This configuration provides equivalent functionality to the GitHub Actions workflow
+# This configuration provides equivalent functionality to GitHub Actions
 
 steps:
   # Checkout code (automatic in Cloud Build)
-  
+
   # Setup Node.js and install dependencies
   - name: 'node:20'
     id: 'setup-node'
     entrypoint: 'node'
     args: ['--version']
-    
+
   # Cache dependencies using Cloud Build cache
   - name: 'node:20'
     id: 'install-dependencies'
@@ -17,7 +17,7 @@ steps:
     args: ['install']
     env:
       - 'NPM_CONFIG_CACHE=/workspace/.npm-cache'
-    
+
   # Example build step
   - name: 'node:20'
     id: 'build'
@@ -26,7 +26,7 @@ steps:
       - '-c'
       - |
         echo "Build completed with cached dependencies"
-    
+
   # Run tests
   - name: 'node:20'
     id: 'test'
@@ -40,7 +40,7 @@ steps:
 options:
   machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
-  
+
 # Cache configuration
 cache:
   paths:
