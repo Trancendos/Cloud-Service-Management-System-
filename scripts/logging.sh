@@ -39,9 +39,31 @@ export LOG_LEVEL_FATAL=4
 # Internal Helper Functions
 ###############################################################################
 
+# Calculate duration between two timestamps (portable, no bc required)
+_calc_duration() {
+    local start_time="$1"
+    local end_time="$2"
+
+    # Try to use bc if available for precise calculation
+    if command -v bc >/dev/null 2>&1; then
+        echo "$end_time - $start_time" | bc -l
+    else
+        # Fallback to integer arithmetic (seconds only)
+        local start_sec="${start_time%.*}"
+        local end_sec="${end_time%.*}"
+        echo "$((end_sec - start_sec))"
+    fi
+}
+
 # Get current timestamp in ISO 8601 format
 _log_timestamp() {
-    date -u +"%Y-%m-%dT%H:%M:%S.%3NZ"
+    # Use portable date format (milliseconds not supported on all systems)
+    if date -u +"%Y-%m-%dT%H:%M:%S.%3NZ" 2>/dev/null | grep -q '%3N'; then
+        # Fallback for systems without %N support (e.g., macOS)
+        date -u +"%Y-%m-%dT%H:%M:%SZ"
+    else
+        date -u +"%Y-%m-%dT%H:%M:%S.%3NZ"
+    fi
 }
 
 # Get log level name
@@ -220,11 +242,11 @@ log_exec() {
         output=$("$@" 2>&1)
         exit_code=$?
     fi
-    
+
     local end_time=$(date +%s.%N)
-    local duration=$(echo "$end_time - $start_time" | bc -l)
-    local duration_fmt=$(printf "%.3f" "$duration")
-    
+    local duration=$(_calc_duration "$start_time" "$end_time")
+    local duration_fmt=$(printf "%.3f" "$duration" 2>/dev/null || echo "$duration")
+
     if [ $exit_code -eq 0 ]; then
         log_debug "Command completed successfully in ${duration_fmt}s"
         if [ "$VERBOSE" = "false" ] && [ -n "$output" ]; then
@@ -326,16 +348,16 @@ timer_stop() {
         log_warn "Timer '$timer_name' was not started"
         return 1
     fi
-    
+
     local end_time=$(date +%s.%N)
-    local duration=$(echo "$end_time - $start_time" | bc -l)
-    local duration_fmt=$(printf "%.3f" "$duration")
-    
+    local duration=$(_calc_duration "$start_time" "$end_time")
+    local duration_fmt=$(printf "%.3f" "$duration" 2>/dev/null || echo "$duration")
+
     log_info "Timer '$timer_name' completed in ${duration_fmt}s"
-    
+
     # Clean up timer variable
     unset "TIMER_${timer_name}"
-    
+
     echo "$duration_fmt"
 }
 
