@@ -47,7 +47,10 @@ validate_yaml() {
         ((WARNINGS++))
         return 0
     fi
-    
+
+    # Using relaxed mode to allow common style variations across different
+    # CI/CD platforms (e.g., document-start markers, line length)
+    # This ensures compatibility while still catching syntax errors
     if yamllint -d relaxed "$file" > /dev/null 2>&1; then
         echo -e "${GREEN}✓ Valid${NC}"
         ((PASSED++))

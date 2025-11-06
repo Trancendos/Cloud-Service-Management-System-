@@ -34,9 +34,9 @@ build:
     - echo "Installing dependencies..."
     - npm ci --cache .npm --prefer-offline
     - echo "Build completed with cached dependencies"
-  only:
-    - main
-    - merge_requests
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   artifacts:
     paths:
       - node_modules/
@@ -50,9 +50,9 @@ test:
   script:
     - echo "Running tests..."
     - echo "Tests completed"
-  only:
-    - main
-    - merge_requests
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 # Workflow rules to control when pipeline runs
 workflow:

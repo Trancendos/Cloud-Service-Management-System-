@@ -38,7 +38,7 @@ steps:
 
 # Configure caching for dependencies
 options:
-  machineType: 'N1_HIGHCPU_8'
+  machineType: 'E2_HIGHCPU_4'  # Optimized for cost efficiency
   logging: CLOUD_LOGGING_ONLY
 
 # Cache configuration
