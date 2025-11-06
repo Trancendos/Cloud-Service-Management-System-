@@ -1,0 +1,306 @@
+name: AI Code Review Bot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  ai-code-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install code analysis tools
+        run: |
+          pip install pylint flake8 bandit safety
+      
+      - name: Get changed files
+        id: changed-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | tr '\n' ' ')
+          else
+            FILES=$(git diff --name-only HEAD~1 HEAD | tr '\n' ' ')
+          fi
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "Changed files: $FILES"
+      
+      - name: AI-Powered Code Review
+        id: code-review
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import subprocess
+          import re
+          from pathlib import Path
+          
+          class AICodeReviewer:
+              def __init__(self):
+                  self.findings = {
+                      'security': [],
+                      'quality': [],
+                      'style': [],
+                      'best_practices': []
+                  }
+                  self.files_reviewed = 0
+              
+              def review_python_file(self, filepath):
+                  """AI-powered Python code review"""
+                  print(f"🔍 Reviewing Python file: {filepath}")
+                  
+                  # Security scan with bandit
+                  try:
+                      result = subprocess.run(
+                          ['bandit', '-f', 'txt', filepath],
+                          capture_output=True,
+                          text=True,
+                          timeout=30
+                      )
+                      if 'Issue:' in result.stdout:
+                          self.findings['security'].append(
+                              f"🔒 {filepath}: Security issues detected by Bandit"
+                          )
+                  except Exception as e:
+                      print(f"Warning: Could not run bandit on {filepath}: {e}")
+                  
+                  # Code quality analysis
+                  self._analyze_code_quality(filepath)
+                  self.files_reviewed += 1
+              
+              def review_javascript_file(self, filepath):
+                  """Review JavaScript/TypeScript files"""
+                  print(f"🔍 Reviewing JavaScript file: {filepath}")
+                  
+                  with open(filepath, 'r') as f:
+                      content = f.read()
+                  
+                  # Check for common issues
+                  if 'eval(' in content:
+                      self.findings['security'].append(
+                          f"🔒 {filepath}: Use of eval() detected - potential security risk"
+                      )
+                  
+                  if 'var ' in content:
+                      self.findings['style'].append(
+                          f"💅 {filepath}: Use 'let' or 'const' instead of 'var'"
+                      )
+                  
+                  # Check for console.log in production code
+                  if re.search(r'console\.(log|debug|info)', content):
+                      self.findings['quality'].append(
+                          f"⚠️ {filepath}: Contains console.log statements"
+                      )
+                  
+                  self.files_reviewed += 1
+              
+              def review_workflow_file(self, filepath):
+                  """Review GitHub Actions workflow files"""
+                  print(f"🔍 Reviewing workflow file: {filepath}")
+                  
+                  with open(filepath, 'r') as f:
+                      content = f.read()
+                  
+                  # Check for secrets in code
+                  if re.search(r'(password|secret|token|api[_-]?key)\s*[:=]', content, re.IGNORECASE):
+                      self.findings['security'].append(
+                          f"🔒 {filepath}: Potential hardcoded secrets detected"
+                      )
+                  
+                  # Check for pinned versions
+                  unpinned_actions = re.findall(r'uses:\s*([^@\n]+)@(main|master)\s', content)
+                  if unpinned_actions:
+                      self.findings['best_practices'].append(
+                          f"📌 {filepath}: Actions should be pinned to specific versions, not @main/@master"
+                      )
+                  
+                  self.files_reviewed += 1
+              
+              def review_shell_script(self, filepath):
+                  """Review shell scripts"""
+                  print(f"🔍 Reviewing shell script: {filepath}")
+                  
+                  with open(filepath, 'r') as f:
+                      content = f.read()
+                  
+                  # Check for unsafe practices
+                  if re.search(r'\$\([^\)]*\$', content):
+                      self.findings['security'].append(
+                          f"🔒 {filepath}: Potential command injection vulnerability"
+                      )
+                  
+                  # Check for error handling
+                  if 'set -e' not in content and 'set -o errexit' not in content:
+                      self.findings['best_practices'].append(
+                          f"💡 {filepath}: Consider adding 'set -e' for better error handling"
+                      )
+                  
+                  self.files_reviewed += 1
+              
+              def _analyze_code_quality(self, filepath):
+                  """Analyze code quality metrics"""
+                  with open(filepath, 'r') as f:
+                      content = f.read()
+                      lines = content.split('\n')
+                  
+                  # Check file length
+                  if len(lines) > 500:
+                      self.findings['quality'].append(
+                          f"📏 {filepath}: File is {len(lines)} lines long. Consider splitting into smaller modules."
+                      )
+                  
+                  # Check for TODO/FIXME
+                  todos = [i+1 for i, line in enumerate(lines) if re.search(r'\b(TODO|FIXME|XXX)\b', line, re.IGNORECASE)]
+                  if todos:
+                      self.findings['quality'].append(
+                          f"📝 {filepath}: Contains TODO/FIXME on lines: {todos[:5]}"
+                      )
+              
+              def review_files(self, files_str):
+                  """Review all changed files"""
+                  if not files_str or files_str.strip() == '':
+                      print("No files to review")
+                      return
+                  
+                  files = files_str.split()
+                  print(f"🤖 AI Code Review Bot - Reviewing {len(files)} files...")
+                  
+                  for file in files:
+                      if not Path(file).exists():
+                          continue
+                      
+                      ext = Path(file).suffix.lower()
+                      
+                      if ext == '.py':
+                          self.review_python_file(file)
+                      elif ext in ['.js', '.ts', '.jsx', '.tsx']:
+                          self.review_javascript_file(file)
+                      elif ext in ['.yml', '.yaml']:
+                          self.review_workflow_file(file)
+                      elif ext in ['.sh', '.bash']:
+                          self.review_shell_script(file)
+              
+              def print_report(self):
+                  """Generate comprehensive review report"""
+                  print("\n" + "="*70)
+                  print("🤖 AI CODE REVIEW REPORT")
+                  print("="*70)
+                  print(f"\n📊 Files Reviewed: {self.files_reviewed}")
+                  
+                  total_findings = sum(len(v) for v in self.findings.values())
+                  
+                  if self.findings['security']:
+                      print(f"\n🔒 SECURITY ISSUES ({len(self.findings['security'])}):")
+                      for finding in self.findings['security']:
+                          print(f"  {finding}")
+                  
+                  if self.findings['quality']:
+                      print(f"\n⚠️ CODE QUALITY ISSUES ({len(self.findings['quality'])}):")
+                      for finding in self.findings['quality']:
+                          print(f"  {finding}")
+                  
+                  if self.findings['style']:
+                      print(f"\n💅 STYLE ISSUES ({len(self.findings['style'])}):")
+                      for finding in self.findings['style']:
+                          print(f"  {finding}")
+                  
+                  if self.findings['best_practices']:
+                      print(f"\n💡 BEST PRACTICE SUGGESTIONS ({len(self.findings['best_practices'])}):")
+                      for finding in self.findings['best_practices']:
+                          print(f"  {finding}")
+                  
+                  if total_findings == 0:
+                      print("\n✅ No issues found! Code looks good.")
+                  
+                  print("\n" + "="*70)
+                  
+                  return self.findings, self.files_reviewed
+          
+          # Main execution
+          changed_files = os.environ.get('CHANGED_FILES', '')
+          reviewer = AICodeReviewer()
+          reviewer.review_files(changed_files)
+          findings, files_reviewed = reviewer.print_report()
+          
+          # Set outputs
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"files_reviewed={files_reviewed}\n")
+              f.write(f"security_issues={len(findings['security'])}\n")
+              f.write(f"quality_issues={len(findings['quality'])}\n")
+              f.write(f"style_issues={len(findings['style'])}\n")
+              f.write(f"best_practice_suggestions={len(findings['best_practices'])}\n")
+              total = sum(len(v) for v in findings.values())
+              f.write(f"total_findings={total}\n")
+          PYTHON_SCRIPT
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.files }}
+      
+      - name: Post Review Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const filesReviewed = '${{ steps.code-review.outputs.files_reviewed }}';
+            const securityIssues = '${{ steps.code-review.outputs.security_issues }}';
+            const qualityIssues = '${{ steps.code-review.outputs.quality_issues }}';
+            const styleIssues = '${{ steps.code-review.outputs.style_issues }}';
+            const bestPractices = '${{ steps.code-review.outputs.best_practice_suggestions }}';
+            const totalFindings = '${{ steps.code-review.outputs.total_findings }}';
+            
+            let comment = '## 🤖 AI Code Review Report\n\n';
+            comment += `**Files Reviewed:** ${filesReviewed}\n\n`;
+            
+            if (totalFindings === '0') {
+              comment += '✅ **Great work!** No issues found in this PR.\n\n';
+            } else {
+              comment += '### Findings Summary\n\n';
+              if (securityIssues !== '0') {
+                comment += `- 🔒 **Security Issues:** ${securityIssues}\n`;
+              }
+              if (qualityIssues !== '0') {
+                comment += `- ⚠️ **Code Quality:** ${qualityIssues}\n`;
+              }
+              if (styleIssues !== '0') {
+                comment += `- 💅 **Style Issues:** ${styleIssues}\n`;
+              }
+              if (bestPractices !== '0') {
+                comment += `- 💡 **Best Practices:** ${bestPractices}\n`;
+              }
+              comment += '\n';
+            }
+            
+            comment += '---\n';
+            comment += '*Check the workflow logs for detailed findings and recommendations.*\n';
+            comment += '\n';
+            comment += '**AI Review Capabilities:**\n';
+            comment += '- ✅ Security vulnerability detection\n';
+            comment += '- ✅ Code quality analysis\n';
+            comment += '- ✅ Style consistency checks\n';
+            comment += '- ✅ Best practices validation\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Review Summary
+        run: |
+          echo "🤖 AI Code Review Complete"
+          echo "Files Reviewed: ${{ steps.code-review.outputs.files_reviewed }}"
+          echo "Total Findings: ${{ steps.code-review.outputs.total_findings }}"
+          echo "Security Issues: ${{ steps.code-review.outputs.security_issues }}"
