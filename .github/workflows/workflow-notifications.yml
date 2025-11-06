@@ -144,13 +144,15 @@ jobs:
         if: vars.ENABLE_GITHUB_COMMENTS == 'true'
         id: find-pr
         uses: actions/github-script@v7
+        env:
+          HEAD_BRANCH: ${{ steps.workflow-details.outputs.branch }}
         with:
           script: |
             const { data: pulls } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              head: `${context.repo.owner}:${{ steps.workflow-details.outputs.branch }}`
+              head: `${context.repo.owner}:${process.env.HEAD_BRANCH}`
             });
             
             if (pulls.length > 0) {
@@ -189,14 +191,21 @@ jobs:
             });
       
       - name: Notification summary
+        env:
+          WORKFLOW_NAME: ${{ steps.workflow-details.outputs.workflow_name }}
+          STATUS_EMOJI: ${{ steps.workflow-details.outputs.status_emoji }}
+          WORKFLOW_STATUS: ${{ steps.workflow-details.outputs.workflow_status }}
+          BRANCH: ${{ steps.workflow-details.outputs.branch }}
+          TRIGGERED_BY: ${{ steps.workflow-details.outputs.triggered_by }}
+          SHORT_SHA: ${{ steps.workflow-details.outputs.short_sha }}
         run: |
           echo "### Workflow Run Notification Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** ${{ steps.workflow-details.outputs.workflow_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ${{ steps.workflow-details.outputs.status_emoji }} ${{ steps.workflow-details.outputs.workflow_status }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ steps.workflow-details.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ steps.workflow-details.outputs.triggered_by }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ steps.workflow-details.outputs.short_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** $WORKFLOW_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $STATUS_EMOJI $WORKFLOW_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** $BRANCH" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** $TRIGGERED_BY" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $SHORT_SHA" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Notifications sent:**" >> $GITHUB_STEP_SUMMARY
           
