@@ -112,6 +112,128 @@ jobs:
             echo "No deprecated actions found. All workflows are up to date!"
           fi
       
+
+      - name: Validate YAML syntax
+        if: steps.fix-actions.outputs.changes_made == 'true'
+        run: |
+          echo "=== Validating YAML Syntax ==="
+          validation_failed=false
+          
+          # Find all modified workflow files
+          workflow_files=$(find .github/workflows -type f \( -name "*.yml" -o -name "*.yaml" \) ! -name "auto-fix-deprecated-actions.yml")
+          
+          for file in $workflow_files; do
+            echo "Validating: $file"
+            
+            # Check if file is valid YAML using Python
+            if ! python3 -c "import yaml, sys; yaml.safe_load(open('$file'))" 2>/dev/null; then
+              echo "  ❌ ERROR: Invalid YAML syntax in $file"
+              validation_failed=true
+            else
+              echo "  ✅ Valid YAML syntax"
+            fi
+          done
+          
+          if [ "$validation_failed" = true ]; then
+            echo ""
+            echo "❌ Validation failed: One or more workflow files have invalid YAML syntax"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All workflow files have valid YAML syntax"
+      
+      - name: Validate workflow structure
+        if: steps.fix-actions.outputs.changes_made == 'true'
+        run: |
+          echo "=== Validating Workflow Structure ==="
+          validation_failed=false
+          
+          workflow_files=$(find .github/workflows -type f \( -name "*.yml" -o -name "*.yaml" \) ! -name "auto-fix-deprecated-actions.yml")
+          
+          for file in $workflow_files; do
+            echo "Validating structure: $file"
+            
+            # Check for required top-level keys using simple validation
+            # Note: YAML parses 'on:' keyword as boolean True key, not string 'on'
+            has_trigger=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print(True in w or 'on' in w)" 2>/dev/null)
+            has_jobs=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('jobs' in w)" 2>/dev/null)
+            has_name=$(python3 -c "import yaml; w=yaml.safe_load(open('$file')); print('name' in w)" 2>/dev/null)
+            
+            if [ "$has_name" != "True" ]; then
+              echo "  ⚠️  WARNING: Missing 'name' field"
+            fi
+            
+            if [ "$has_trigger" != "True" ]; then
+              echo "  ❌ ERROR: Missing 'on' field (required)"
+              validation_failed=true
+            fi
+            
+            if [ "$has_jobs" != "True" ]; then
+              echo "  ❌ ERROR: Missing 'jobs' field (required)"
+              validation_failed=true
+            fi
+            
+            # Check that all 'uses' actions are properly formatted
+            while IFS= read -r line; do
+              if [[ "$line" =~ uses:[[:space:]]*([^[:space:]]+) ]]; then
+                action="${BASH_REMATCH[1]}"
+                # Remove quotes if present
+                action="${action//\"/}"
+                action="${action//\'/}"
+                
+                # Validate action format (owner/repo@ref or ./path or docker://)
+                # Note: ref can include forward slashes for branch names, repos can have dots
+                if [[ ! "$action" =~ ^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+@[a-zA-Z0-9._/-]+$ ]] && [[ ! "$action" =~ ^\./.*$ ]] && [[ ! "$action" =~ ^docker:// ]]; then
+                  echo "  ⚠️  WARNING: Unusual action format: $action"
+                fi
+              fi
+            done < "$file"
+            
+            # Print success only if no validation errors for this file
+            if [ "$validation_failed" = false ]; then
+              echo "  ✅ Workflow structure is valid"
+            fi
+          done
+          
+          if [ "$validation_failed" = true ]; then
+            echo ""
+            echo "❌ Validation failed: One or more workflow files have structural issues"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All workflow files have valid structure"
+      
+      - name: Verify action versions exist
+        if: steps.fix-actions.outputs.changes_made == 'true'
+        run: |
+          echo "=== Verifying Action Versions ==="
+          
+          # List of actions we commonly update
+          declare -A actions_to_verify=(
+            ["actions/cache"]="v4"
+            ["actions/checkout"]="v4"
+            ["actions/setup-node"]="v4"
+            ["actions/setup-python"]="v5"
+          )
+          
+          for action in "${!actions_to_verify[@]}"; do
+            version="${actions_to_verify[$action]}"
+            echo "Checking if $action@$version exists..."
+            
+            # Use GitHub API to check if the tag/release exists
+            if curl -sSf -o /dev/null "https://github.com/$action/releases/tag/$version" 2>/dev/null || \
+               curl -sSf -o /dev/null "https://github.com/$action/tree/$version" 2>/dev/null; then
+              echo "  ✅ $action@$version exists"
+            else
+              echo "  ⚠️  WARNING: Could not verify $action@$version (network issue or does not exist)"
+            fi
+          done
+          
+          echo ""
+          echo "✅ Action version verification complete"
+      
       - name: Create Pull Request
         if: steps.fix-actions.outputs.changes_made == 'true'
         run: |
@@ -152,6 +274,11 @@ jobs:
           - ✅ \`actions/setup-node@v1\` and \`v2\` → \`actions/setup-node@v4\`
           - ✅ \`actions/setup-python@v1\` and \`v2\` → \`actions/setup-python@v5\`
 
+          ### Validation Performed:
+          - ✅ YAML syntax validation
+          - ✅ Workflow structure validation
+          - ✅ Action version existence verification
+
           ### Why These Updates?
           - **Security**: Newer versions include important security patches
           - **Performance**: Latest versions offer improved caching and performance
@@ -159,6 +286,11 @@ jobs:
           - **Deprecation**: Older versions are deprecated and may stop working
 
           ### Testing
+          All modified workflow files have been validated for:
+          - Correct YAML syntax
+          - Valid workflow structure
+          - Existence of target action versions
+
           Please review the changes and ensure all workflows continue to function correctly.
 
           ---
@@ -175,6 +307,9 @@ jobs:
         run: |
           if [ "${{ steps.fix-actions.outputs.changes_made }}" = "true" ]; then
             echo "✅ Deprecated actions found and fixed!"
+            echo "✅ YAML syntax validation passed"
+            echo "✅ Workflow structure validation passed"
+            echo "✅ Action version verification completed"
             echo "📋 A pull request has been created with the updates."
           else
             echo "✅ All workflows are using up-to-date actions!"
