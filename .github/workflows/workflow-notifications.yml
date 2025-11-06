@@ -31,7 +31,6 @@ jobs:
           echo "triggered_by=${{ github.event.workflow_run.triggering_actor.login }}" >> $GITHUB_OUTPUT
           echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
           echo "commit_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
-          echo "event=${{ github.event.action }}" >> $GITHUB_OUTPUT
           
           # Get short commit SHA
           short_sha=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
@@ -57,7 +56,7 @@ jobs:
           esac
       
       - name: Send Slack notification
-        if: github.event.action == 'completed' && vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
+        if: vars.ENABLE_SLACK_NOTIFICATIONS == 'true'
         uses: slackapi/slack-github-action@v1.26.0
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -110,7 +109,7 @@ jobs:
             }
       
       - name: Send email notification
-        if: github.event.action == 'completed' && vars.ENABLE_EMAIL_NOTIFICATIONS == 'true'
+        if: vars.ENABLE_EMAIL_NOTIFICATIONS == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.MAIL_SERVER }}
@@ -135,7 +134,7 @@ jobs:
           priority: normal
       
       - name: Find associated PR
-        if: github.event.action == 'completed' && vars.ENABLE_GITHUB_COMMENTS == 'true'
+        if: vars.ENABLE_GITHUB_COMMENTS == 'true'
         id: find-pr
         uses: actions/github-script@v7
         with:
@@ -156,7 +155,6 @@ jobs:
       
       - name: Comment on PR with workflow result
         if: |
-          github.event.action == 'completed' && 
           vars.ENABLE_GITHUB_COMMENTS == 'true' &&
           steps.find-pr.outputs.has_pr == 'true'
         uses: actions/github-script@v7
