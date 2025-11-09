@@ -227,6 +227,7 @@ jobs:
               f.write(f"validation_passed={str(success).lower()}\n")
               f.write(f"invalid_count={len(checker.results['invalid'])}\n")
               f.write(f"warning_count={len(checker.results['warnings'])}\n")
+              f.write(f"suggestion_count={len(checker.results['suggestions'])}\n")
               f.write(f"valid_count={len(checker.results['valid'])}\n")
           
           exit(0 if success else 1)
@@ -240,6 +241,7 @@ jobs:
             const validation_passed = '${{ steps.data-check.outputs.validation_passed }}' === 'true';
             const invalid_count = '${{ steps.data-check.outputs.invalid_count }}';
             const warning_count = '${{ steps.data-check.outputs.warning_count }}';
+            const suggestion_count = '${{ steps.data-check.outputs.suggestion_count }}';
             const valid_count = '${{ steps.data-check.outputs.valid_count }}';
             
             let comment = '## 🤖 AI Data Validation Report\n\n';
@@ -253,7 +255,8 @@ jobs:
             comment += `**Summary:**\n`;
             comment += `- ✅ Valid Files: ${valid_count}\n`;
             comment += `- ❌ Invalid Files: ${invalid_count}\n`;
-            comment += `- ⚠️ Warnings: ${warning_count}\n\n`;
+            comment += `- ⚠️ Warnings: ${warning_count}\n`;
+            comment += `- 💡 Suggestions: ${suggestion_count}\n\n`;
             comment += `Check the workflow logs for detailed information.`;
             
             github.rest.issues.createComment({
@@ -270,3 +273,4 @@ jobs:
           echo "Valid Files: ${{ steps.data-check.outputs.valid_count }}"
           echo "Invalid Files: ${{ steps.data-check.outputs.invalid_count }}"
           echo "Warnings: ${{ steps.data-check.outputs.warning_count }}"
+          echo "Suggestions: ${{ steps.data-check.outputs.suggestion_count }}"
