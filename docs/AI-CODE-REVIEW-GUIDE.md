@@ -107,8 +107,6 @@ The AI review uses pattern-based analysis. To improve results:
 ## Related Workflows
 
 - `ai-data-checker.yml` - Validates data files
-- `ai-workflow-validator.yml` - Checks workflow syntax
-- `ai-debugging-assistant.yml` - Helps debug failures
 
 ## Questions?
 
