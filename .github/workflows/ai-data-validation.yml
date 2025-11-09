@@ -60,9 +60,9 @@ jobs:
           OUTPUT="$(cat /tmp/validation_output.txt)"
           
           # Extract metrics from the output
-          VALID=$(echo "$OUTPUT" | grep "✅ Valid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
-          INVALID=$(echo "$OUTPUT" | grep "❌ Invalid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
-          WARNINGS=$(echo "$OUTPUT" | grep "⚠️ Warnings:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
+          VALID=$(echo "$OUTPUT" | grep "✅ Valid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g' || echo "0")
+          INVALID=$(echo "$OUTPUT" | grep "❌ Invalid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g' || echo "0")
+          WARNINGS=$(echo "$OUTPUT" | grep "⚠️ Warnings:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g' || echo "0")
           
           # Create the report
           if [ "$INVALID" = "0" ]; then
