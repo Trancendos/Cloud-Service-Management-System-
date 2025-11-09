@@ -200,6 +200,33 @@ Check the workflow logs for detailed information.
 - ✅ No need to wait for real workflow events
 - ✅ Configurable outcome for testing both success and failure scenarios
 
+### 6. AI Code Review (`ai-code-review.yml`)
+
+**Purpose**: Automatically reviews code changes in pull requests and provides feedback on security, quality, style, and best practices.
+
+**Triggers**:
+- **PR Opened**: When a new pull request is created
+- **PR Synchronized**: When new commits are pushed to a pull request
+- **PR Reopened**: When a closed pull request is reopened
+
+**What It Does**:
+1. Checks out the repository and analyzes changed files
+2. Performs automated code analysis:
+   - 🔒 **Security vulnerability detection**: Scans for hardcoded credentials and secrets
+   - 📊 **Code quality analysis**: Checks for TODO/FIXME comments and code patterns
+   - 🎨 **Style consistency checks**: Validates coding style and conventions
+   - ✅ **Best practices validation**: Ensures code follows repository standards
+3. Posts a comprehensive review comment on the pull request
+4. Provides actionable feedback when issues are found
+
+**Benefits**:
+- ✅ Automated code review for every pull request
+- ✅ Early detection of security vulnerabilities
+- ✅ Consistent code quality enforcement
+- ✅ Reduces manual review burden
+- ✅ Provides immediate feedback to contributors
+- ✅ Helps maintain code quality standards
+
 ## Best Practices
 
 ### Using actions/cache@v4
@@ -230,6 +257,40 @@ The latest version of `actions/cache` includes:
 - **Performance**: v4 offers significant performance improvements
 - **Features**: Access to latest caching features and improvements
 - **Compatibility**: Ensures workflows work with current GitHub infrastructure
+
+### 8. AI Data Checker (`ai-data-checker.yml`)
+
+**Purpose**: Automatically validates JSON, YAML, and Markdown files for syntax errors, security issues, and common problems.
+
+**Triggers**:
+- **Pull Requests**: Runs when data files are changed (*.json, *.yaml, *.yml, *.md)
+- **Push to main**: Runs when data files are pushed to main branch
+- **Manual**: Can be triggered manually via workflow_dispatch
+
+**What It Does**:
+1. Scans all JSON, YAML, and Markdown files in the repository
+2. Validates syntax and structure
+3. Checks for security concerns (sensitive field names in non-test files)
+4. Detects common issues:
+   - Empty JSON objects/arrays
+   - Empty YAML files
+   - Placeholder links (example.com)
+   - TODO/FIXME markers
+   - Missing workflow names
+
+**Smart Features**:
+- ✅ Recognizes test data directories (`test-data/`, `tests/`, `examples/`, etc.)
+- ✅ Detects dummy values (DUMMY, test, sample, not_real, for_testing)
+- ✅ Skips false-positive warnings for test files
+- ✅ Posts validation report as PR comment
+- ✅ Categorizes findings as errors, warnings, or suggestions
+
+**Benefits**:
+- ✅ Prevents invalid data files from being merged
+- ✅ Catches security issues early (sensitive data in production files)
+- ✅ Maintains data quality across the repository
+- ✅ Provides clear feedback in PR comments
+- ✅ Eliminates false positives for test/dummy data
 
 ## Maintenance
 

@@ -1,0 +1,25 @@
+# CodeRabbit configuration
+# Documentation: https://docs.coderabbit.ai/reference/yaml-template
+
+language: "en-US"
+
+reviews:
+  # Enable automatic code reviews
+  enabled: true
+
+  # Disable review status messages to prevent
+  # "Review skipped - Bot user detected" comments
+  # This suppresses status notifications when reviews are skipped
+  review_status: false
+
+  # Use a balanced review profile
+  profile: "chill"
+
+  # Include high-level summary in reviews
+  high_level_summary: true
+
+  # Paths to exclude from reviews
+  paths:
+    exclude:
+      - "**/*.md"
+      - ".coderabbit.yaml"

@@ -1,0 +1,332 @@
+name: AI Data Checker
+
+on:
+  pull_request:
+    paths:
+      - '**/*.json'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.md'
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.json'
+      - '**/*.yaml'
+      - '**/*.yml'
+  workflow_dispatch:
+
+jobs:
+  data-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install data validation tools
+        run: |
+          pip install pyyaml jsonschema validators
+      
+      - name: AI-Powered Data Validation
+        id: data-check
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import yaml
+          import re
+          from pathlib import Path
+          
+          class AIDataChecker:
+              def __init__(self):
+                  self.results = {
+                      'valid': [],
+                      'invalid': [],
+                      'warnings': [],
+                      'suggestions': []
+                  }
+                  # Directories containing test/dummy data that should be excluded from sensitive field warnings
+                  self.test_data_dirs = ['test-data', 'tests', 'test', 'examples', 'sample', 'dummy']
+              
+              def is_test_file(self, filepath):
+                  """Check if file is in a test/dummy data directory"""
+                  filepath_str = str(filepath).lower()
+                  return any(test_dir in filepath_str for test_dir in self.test_data_dirs)
+              
+              def check_json_file(self, filepath):
+                  """Validate JSON files with AI-powered checks"""
+                  try:
+                      with open(filepath, 'r') as f:
+                          data = json.load(f)
+                      
+                      # Basic validation passed
+                      self.results['valid'].append(f"✅ {filepath}: Valid JSON")
+                      
+                      # AI-powered content analysis
+                      self._analyze_json_content(data, filepath)
+                      
+                  except json.JSONDecodeError as e:
+                      self.results['invalid'].append(f"❌ {filepath}: Invalid JSON - {e}")
+                  except Exception as e:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Error reading file - {e}")
+              
+              def check_yaml_file(self, filepath):
+                  """Validate YAML files with AI-powered checks"""
+                  try:
+                      with open(filepath, 'r') as f:
+                          data = yaml.safe_load(f)
+                      
+                      # Basic validation passed
+                      self.results['valid'].append(f"✅ {filepath}: Valid YAML")
+                      
+                      # AI-powered content analysis
+                      self._analyze_yaml_content(data, filepath)
+                      
+                  except yaml.YAMLError as e:
+                      self.results['invalid'].append(f"❌ {filepath}: Invalid YAML - {e}")
+                  except Exception as e:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Error reading file - {e}")
+              
+              def check_markdown_file(self, filepath):
+                  """Check markdown files for common issues"""
+                  try:
+                      with open(filepath, 'r') as f:
+                          content = f.read()
+                      
+                      # Check for broken links
+                      links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', content)
+                      for text, url in links:
+                          if url.startswith('http') and 'example.com' in url:
+                              self.results['warnings'].append(
+                                  f"⚠️ {filepath}: Contains example.com placeholder link"
+                              )
+                      
+                      # Check for TODO/FIXME comments - but exclude documentation contexts
+                      # Skip if TODO/FIXME appears in:
+                      # - List items (lines starting with -, *, or numbers)
+                      # - Code blocks (between ``` or indented with 4+ spaces)
+                      # - Headers (lines starting with #)
+                      # Only flag patterns like "TODO:" or "FIXME:" to avoid false positives
+                      lines = content.split('\n')
+                      in_code_block = False
+                      found_actionable_todo = False
+                      
+                      for line in lines:
+                          # Track code blocks
+                          if line.strip().startswith('```'):
+                              in_code_block = not in_code_block
+                              continue
+                          
+                          # Skip if in code block
+                          if in_code_block:
+                              continue
+                          
+                          # Skip if it's a header
+                          if line.strip().startswith('#'):
+                              continue
+                          
+                          # Skip if it's a list item or indented (documentation context)
+                          if re.match(r'^\s*[-*+]\s', line) or re.match(r'^\s*\d+\.\s', line) or line.startswith('    '):
+                              continue
+                          
+                          # Check for actionable TODO/FIXME patterns (with colon)
+                          if re.search(r'\b(TODO|FIXME|XXX)\s*:', line, re.IGNORECASE):
+                              found_actionable_todo = True
+                              break
+                      
+                      if found_actionable_todo:
+                          self.results['suggestions'].append(
+                              f"💡 {filepath}: Contains actionable TODO/FIXME markers"
+                          )
+                      
+                      self.results['valid'].append(f"✅ {filepath}: Markdown checked")
+                      
+                  except Exception as e:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Error reading file - {e}")
+              
+              def _analyze_json_content(self, data, filepath):
+                  """AI-powered analysis of JSON content"""
+                  # Check for empty objects/arrays
+                  if isinstance(data, dict) and not data:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Empty JSON object")
+                  elif isinstance(data, list) and not data:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Empty JSON array")
+                  
+                  # Check for common security issues - skip for test data files
+                  if not self.is_test_file(filepath):
+                      data_str = json.dumps(data)
+                      sensitive_keywords = ['password', 'secret', 'token', 'api_key']
+                      
+                      if any(keyword in data_str.lower() for keyword in sensitive_keywords):
+                          # Check if these are actually dummy/test values
+                          is_dummy = any(marker in data_str.lower() for marker in [
+                              'dummy', 'test', 'example', 'sample', 'not_real', 'for_testing'
+                          ])
+                          
+                          if not is_dummy:
+                              self.results['warnings'].append(
+                                  f"⚠️ {filepath}: Contains sensitive field names. Ensure no secrets are committed!"
+                              )
+              
+              def _analyze_yaml_content(self, data, filepath):
+                  """AI-powered analysis of YAML content"""
+                  if data is None:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Empty YAML file")
+                  
+                  # Check for common issues in workflow files
+                  if isinstance(data, dict):
+                      if 'on' in data and 'jobs' in data:
+                          # This is likely a workflow file
+                          if not data.get('name'):
+                              self.results['suggestions'].append(
+                                  f"💡 {filepath}: Workflow missing 'name' field"
+                              )
+              
+              def scan_repository(self):
+                  """Scan repository for data files"""
+                  print("🤖 AI Data Checker - Scanning repository...")
+                  
+                  # Scan JSON files
+                  for json_file in Path('.').rglob('*.json'):
+                      if '.git' not in str(json_file) and 'node_modules' not in str(json_file):
+                          self.check_json_file(json_file)
+                  
+                  # Scan YAML files
+                  for yaml_file in Path('.').rglob('*.y*ml'):
+                      if '.git' not in str(yaml_file):
+                          self.check_yaml_file(yaml_file)
+                  
+                  # Scan Markdown files
+                  for md_file in Path('.').rglob('*.md'):
+                      if '.git' not in str(md_file):
+                          self.check_markdown_file(md_file)
+              
+              def print_report(self):
+                  """Print comprehensive data validation report"""
+                  print("\n" + "="*70)
+                  print("🤖 AI DATA VALIDATION REPORT")
+                  print("="*70)
+                  
+                  if self.results['invalid']:
+                      print(f"\n❌ INVALID FILES ({len(self.results['invalid'])}):")
+                      for item in self.results['invalid']:
+                          print(f"  {item}")
+                  
+                  if self.results['warnings']:
+                      print(f"\n⚠️ WARNINGS ({len(self.results['warnings'])}):")
+                      for item in self.results['warnings']:
+                          print(f"  {item}")
+                  
+                  if self.results['suggestions']:
+                      print(f"\n💡 SUGGESTIONS ({len(self.results['suggestions'])}):")
+                      for item in self.results['suggestions']:
+                          print(f"  {item}")
+                  
+                  print(f"\n✅ VALID FILES ({len(self.results['valid'])}):")
+                  for item in self.results['valid'][:10]:  # Show first 10
+                      print(f"  {item}")
+                  if len(self.results['valid']) > 10:
+                      print(f"  ... and {len(self.results['valid']) - 10} more")
+                  
+                  print("\n" + "="*70)
+                  
+                  # Summary
+                  print(f"\n📊 SUMMARY:")
+                  print(f"  Valid Files: {len(self.results['valid'])}")
+                  print(f"  Invalid Files: {len(self.results['invalid'])}")
+                  print(f"  Warnings: {len(self.results['warnings'])}")
+                  print(f"  Suggestions: {len(self.results['suggestions'])}")
+                  
+                  return len(self.results['invalid']) == 0
+          
+          # Main execution
+          checker = AIDataChecker()
+          checker.scan_repository()
+          success = checker.print_report()
+          
+          # Set outputs
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"validation_passed={str(success).lower()}\n")
+              f.write(f"invalid_count={len(checker.results['invalid'])}\n")
+              f.write(f"warning_count={len(checker.results['warnings'])}\n")
+              f.write(f"suggestion_count={len(checker.results['suggestions'])}\n")
+              f.write(f"valid_count={len(checker.results['valid'])}\n")
+          
+          exit(0 if success else 1)
+          PYTHON_SCRIPT
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const validation_passed = '${{ steps.data-check.outputs.validation_passed }}' === 'true';
+            const invalid_count = '${{ steps.data-check.outputs.invalid_count }}';
+            const warning_count = '${{ steps.data-check.outputs.warning_count }}';
+            const suggestion_count = '${{ steps.data-check.outputs.suggestion_count }}';
+            const valid_count = '${{ steps.data-check.outputs.valid_count }}';
+            
+            let comment = '## 🤖 AI Data Validation Report\n\n';
+            
+            // Check both validation_passed flag and invalid_count to ensure correct message
+            if (validation_passed || invalid_count === '0') {
+              comment += '✅ All data files passed validation!\n\n';
+            } else {
+              comment += '❌ Some data files failed validation\n\n';
+            }
+            
+            comment += `**Summary:**\n`;
+            comment += `- ✅ Valid Files: ${valid_count}\n`;
+            comment += `- ❌ Invalid Files: ${invalid_count}\n`;
+            comment += `- ⚠️ Warnings: ${warning_count}\n`;
+            comment += `- 💡 Suggestions: ${suggestion_count}\n\n`;
+            comment += `Check the workflow logs for detailed information.`;
+            
+            // Find existing comment from this workflow
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && 
+              c.body.includes('🤖 AI Data Validation Report')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+      
+      - name: Data Check Summary
+        run: |
+          echo "🤖 AI Data Validation Complete"
+          echo "Validation Passed: ${{ steps.data-check.outputs.validation_passed }}"
+          echo "Valid Files: ${{ steps.data-check.outputs.valid_count }}"
+          echo "Invalid Files: ${{ steps.data-check.outputs.invalid_count }}"
+          echo "Warnings: ${{ steps.data-check.outputs.warning_count }}"
+          echo "Suggestions: ${{ steps.data-check.outputs.suggestion_count }}"
