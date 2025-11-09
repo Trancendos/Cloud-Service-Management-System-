@@ -6,14 +6,16 @@ This repository uses automated AI-powered code review to provide instant feedbac
 
 ## Report Format
 
-AI Code Review Reports follow this structure:
+Every AI Code Review Report posted to pull requests follows this structure:
 
 ```markdown
 ## 🤖 AI Code Review Report
 
 **Files Reviewed:** [number]
 
-[Status Message]
+[Status: Either success message or warning with issue count]
+
+[Detailed findings - only shown when issues are found]
 
 ---
 *Check the workflow logs for detailed findings and recommendations.*
@@ -25,22 +27,64 @@ AI Code Review Reports follow this structure:
 - ✅ Best practices validation
 ```
 
+The report automatically appears as a comment on your pull request within minutes of opening or updating it.
+
 ## Report Types
 
 ### ✅ Clean Review
-When no issues are found:
-```
+When no issues are found, the AI Code Review Bot posts a success report:
+
+```markdown
+## 🤖 AI Code Review Report
+
+**Files Reviewed:** 5
+
 ✅ **Great work!** No issues found in this PR.
+
+---
+*Check the workflow logs for detailed findings and recommendations.*
+
+**AI Review Capabilities:**
+- ✅ Security vulnerability detection
+- ✅ Code quality analysis
+- ✅ Style consistency checks
+- ✅ Best practices validation
 ```
 
-### 📋 Issues Found
-When issues are detected:
-```
-### Findings Summary
-- 🔒 **Security Issues:** [count]
-- ⚠️ **Code Quality:** [count]
-- 💅 **Style Issues:** [count]
-- 💡 **Best Practices:** [count]
+### ⚠️ Issues Found
+When issues are detected, the report includes detailed findings:
+
+```markdown
+## 🤖 AI Code Review Report
+
+**Files Reviewed:** 3
+
+⚠️ **Found 2 potential issue(s)** that may need attention.
+
+### Code Analysis Results
+
+Analyzing 3 changed file(s)...
+
+#### Security Analysis
+⚠️ Potential hardcoded credentials detected
+
+#### Code Quality
+ℹ️ Found TODO/FIXME comments
+
+#### Style Consistency
+✅ Basic style checks passed
+
+#### Best Practices
+✅ Following repository conventions
+
+---
+*Check the workflow logs for detailed findings and recommendations.*
+
+**AI Review Capabilities:**
+- ✅ Security vulnerability detection
+- ✅ Code quality analysis
+- ✅ Style consistency checks
+- ✅ Best practices validation
 ```
 
 ## What the AI Reviews
@@ -76,6 +120,16 @@ The AI Code Review Bot analyzes:
 - **JavaScript/TypeScript**: Pattern detection, style issues
 - **Shell Scripts**: Command injection, error handling
 - **YAML/Workflows**: Security, best practices
+
+## Real Examples
+
+You can see AI Code Review Reports in action by checking:
+- **PR #8**: Example of a clean review with no issues found
+- **[Clean Review Example](examples/ai-review-clean.md)**: Detailed example of a successful review
+- **[Review with Issues Example](examples/ai-review-with-issues.md)**: Example showing how issues are reported
+- Workflow runs in the [Actions tab](../../actions/workflows/ai-code-review.yml) show detailed analysis logs
+
+Each PR that modifies code will automatically receive an AI Code Review Report as a comment.
 
 ## How to Use Reports
 
