@@ -43,6 +43,7 @@ Management and deployment of GitHub services at 0 costs models
 
 - 🔄 **Automated Action Updates**: Automatically detects and updates deprecated GitHub Actions
 - ✅ **Checkpoint Testing**: Validates workflow operations with dummy data and simulated service accounts
+- 🤖 **AI Data Validation**: Automated validation of data files with PR comments
 - 🎯 **Zero-Cost Model**: Leverages GitHub's free tier for service management
 - 📊 **Continuous Validation**: Daily automated testing ensures system reliability
 
@@ -53,6 +54,7 @@ This repository includes several GitHub Actions workflows:
 1. **Auto-fix Deprecated Actions** - Automatically updates deprecated actions to latest versions
 2. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
 3. **Checkpoint Workflow with Dummy Data** - Validates operations with simulated test scenarios
+4. **AI Data Validation** - Validates JSON and YAML data files on every PR
 
 ## Getting Started
 
@@ -78,6 +80,19 @@ The `test-data/` directory contains:
 - `dummy-workflow-data.json` - Test scenarios and expected outcomes
 
 ⚠️ **Note**: All test data uses dummy credentials for simulation only.
+
+### Data Validation
+
+The repository includes automated data validation that runs on every PR:
+- Validates JSON files in `test-data/`
+- Validates YAML configuration files for all supported platforms
+- Posts validation reports as PR comments
+- Total of 7 critical data files are validated
+
+Run validation manually:
+```bash
+./scripts/validate-data.sh
+```
 
 ## Documentation
 
