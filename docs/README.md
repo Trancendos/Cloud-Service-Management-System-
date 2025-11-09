@@ -6,7 +6,12 @@ This directory contains comprehensive documentation for the Cloud Service Manage
 
 ### AI & Automation
 
-- **[AI Review Reports](AI-REVIEW-REPORTS.md)** - Guide to understanding and handling AI Code Review Reports
+- **[AI Review Reports - Quick Reference](AI-REVIEW-QUICK-REF.md)** - ⚡ Quick guide for handling AI review reports
+  - **Start here** if you see an AI review report
+  - Decision tree and quick actions
+  - Common scenarios
+  
+- **[AI Review Reports - Full Guide](AI-REVIEW-REPORTS.md)** - Complete guide to understanding AI Code Review Reports
   - Report format and types
   - Best practices for handling findings  
   - Important: Why AI reports should NOT be converted to issues
