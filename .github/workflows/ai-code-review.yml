@@ -101,9 +101,9 @@ jobs:
             let commentBody;
 
             if (issuesCount === '0') {
-              commentBody = '<!-- ai-code-review-bot -->\n' +
+              commentBody = '\n' +
                 '## 🤖 AI Code Review Report\n\n' +
-                '**Files Reviewed:** ' + filesCount + '\n\n' +
+                "**Files Reviewed:** " + filesCount + '\n\n' +
                 '✅ **Great work!** No issues found in this PR.\n\n' +
                 '---\n' +
                 '*Check the workflow logs for detailed findings and recommendations.*\n\n' +
@@ -112,16 +112,13 @@ jobs:
                 '- ✅ Code quality analysis\n' +
                 '- ✅ Style consistency checks\n' +
                 '- ✅ Best practices validation\n\n' +
-                '> **Note:** This is an automated review comment. ' +
-                'It should not be converted into an issue.\n';
+                '&gt; **Note:** This is an automated review comment. It should not be converted into an issue.\n';
             } else {
-              const analysisReport =
-                fs.readFileSync('analysis_report.md', 'utf8');
-              commentBody = '<!-- ai-code-review-bot -->\n' +
+              const analysisReport = fs.readFileSync('analysis_report.md', 'utf8');
+              commentBody = '\n' +
                 '## 🤖 AI Code Review Report\n\n' +
-                '**Files Reviewed:** ' + filesCount + '\n\n' +
-                '⚠️ **Found ' + issuesCount +
-                ' potential issue(s)** that may need attention.\n\n' +
+                "**Files Reviewed:** " + filesCount + '\n\n' +
+                '⚠️ **Found ' + issuesCount + ' potential issue(s)** that may need attention.\n\n' +
                 analysisReport + '\n\n' +
                 '---\n' +
                 '*Check the workflow logs for detailed findings and recommendations.*\n\n' +
@@ -130,22 +127,21 @@ jobs:
                 '- ✅ Code quality analysis\n' +
                 '- ✅ Style consistency checks\n' +
                 '- ✅ Best practices validation\n\n' +
-                '> **Note:** This is an automated review comment. ' +
-                'Please address the findings above rather than converting this comment into an issue.\n';
+                '&gt; **Note:** This is an automated review comment. Please address the findings above rather than converting this comment into an issue.\n';
             }
 
-            // Find existing comment from this workflow
-            const { data: comments } = await github.rest.issues.listComments({
-              issue_number: context.issue.number,
+            // Fetch existing comments for the PR
+            const commentsResp = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              issue_number: context.issue.number
             });
-            
-            const botComment = comments.find(c => 
-              c.user.type === 'Bot' && 
-              c.body.includes('🤖 AI Code Review Report')
+
+            const botComment = commentsResp.data.find(c =>
+              c.user && c.user.type === 'Bot' &&
+              c.body && c.body.includes('🤖 AI Code Review Report')
             );
-            
+
             if (botComment) {
               // Update existing comment
               await github.rest.issues.updateComment({
