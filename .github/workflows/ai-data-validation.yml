@@ -1,0 +1,163 @@
+name: AI Data Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'test-data/**'
+      - '.azure-pipelines/**'
+      - '.google-cloud/**'
+      - '.aws/**'
+      - '.gitlab/**'
+      - '.circleci/**'
+      - 'scripts/validate-data.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'test-data/**'
+      - '.azure-pipelines/**'
+      - '.google-cloud/**'
+      - '.aws/**'
+      - '.gitlab/**'
+      - '.circleci/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  validate-data:
+    name: Validate Data Files
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      - name: Install PyYAML
+        run: |
+          pip install PyYAML
+      
+      - name: Run AI Data Validation
+        id: validation
+        run: |
+          chmod +x scripts/validate-data.sh
+          ./scripts/validate-data.sh
+        continue-on-error: true
+      
+      - name: Generate validation report
+        id: report
+        if: always()
+        run: |
+          # Re-run validation to capture output
+          OUTPUT=$(./scripts/validate-data.sh 2>&1 || true)
+          
+          # Extract metrics from the output
+          VALID=$(echo "$OUTPUT" | grep "✅ Valid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
+          INVALID=$(echo "$OUTPUT" | grep "❌ Invalid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
+          WARNINGS=$(echo "$OUTPUT" | grep "⚠️ Warnings:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
+          
+          # Create the report
+          if [ "$INVALID" = "0" ]; then
+            STATUS_EMOJI="✅"
+            STATUS_TEXT="All data files passed validation!"
+          else
+            STATUS_EMOJI="❌"
+            STATUS_TEXT="Some data files failed validation"
+          fi
+          
+          # Save to output
+          echo "valid_files=$VALID" >> $GITHUB_OUTPUT
+          echo "invalid_files=$INVALID" >> $GITHUB_OUTPUT
+          echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+          echo "status_emoji=$STATUS_EMOJI" >> $GITHUB_OUTPUT
+          echo "status_text=$STATUS_TEXT" >> $GITHUB_OUTPUT
+          
+          # Save full output for later use
+          echo "$OUTPUT" > /tmp/validation_output.txt
+      
+      - name: Create PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('/tmp/validation_output.txt', 'utf8');
+            
+            const validFiles = '${{ steps.report.outputs.valid_files }}';
+            const invalidFiles = '${{ steps.report.outputs.invalid_files }}';
+            const warnings = '${{ steps.report.outputs.warnings }}';
+            const statusEmoji = '${{ steps.report.outputs.status_emoji }}';
+            const statusText = '${{ steps.report.outputs.status_text }}';
+            
+            const comment = [
+              '## 🤖 AI Data Validation Report',
+              '',
+              `${statusEmoji} ${statusText}`,
+              '',
+              '**Summary:**',
+              `- ✅ Valid Files: ${validFiles}`,
+              `- ❌ Invalid Files: ${invalidFiles}`,
+              `- ⚠️ Warnings: ${warnings}`,
+              '',
+              'Check the workflow logs for detailed information.'
+            ].join('\n');
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🤖 AI Data Validation Report')
+            );
+            
+            // Update or create comment
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+      
+      - name: Add to job summary
+        if: always()
+        run: |
+          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+          ## 🤖 AI Data Validation Report
+
+          ${{ steps.report.outputs.status_emoji }} ${{ steps.report.outputs.status_text }}
+
+          **Summary:**
+          - ✅ Valid Files: ${{ steps.report.outputs.valid_files }}
+          - ❌ Invalid Files: ${{ steps.report.outputs.invalid_files }}
+          - ⚠️ Warnings: ${{ steps.report.outputs.warnings }}
+
+          See the detailed logs above for more information.
+          EOF
+      
+      - name: Fail if validation failed
+        if: steps.validation.outcome == 'failure'
+        run: |
+          echo "❌ Data validation failed"
+          exit 1
