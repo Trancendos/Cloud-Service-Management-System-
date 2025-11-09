@@ -50,7 +50,7 @@ validate_yaml() {
     
     # Try python with PyYAML first
     if command -v python3 &> /dev/null; then
-        if python3 -c "import yaml, sys; yaml.safe_load(open('$file'))" 2>/dev/null; then
+        if python3 -c "import yaml, sys; yaml.safe_load(open(sys.argv[1]))" "$file" 2>/dev/null; then
             echo -e "${GREEN}✅ Valid${NC}"
             VALID_FILES=$((VALID_FILES + 1))
             VALID_FILE_LIST+=("$file")
