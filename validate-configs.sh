@@ -147,7 +147,16 @@ fi
 check_file ".circleci/README.md" "CircleCI documentation"
 echo ""
 
-echo "7. Checking Documentation"
+echo "7. Checking CodeRabbit Configuration"
+echo "-------------------------------------------------------------------"
+check_file ".coderabbit.yaml" "CodeRabbit config"
+if [ $? -eq 0 ]; then
+    validate_yaml ".coderabbit.yaml" "CodeRabbit"
+    check_content ".coderabbit.yaml" "review_status: false" "Review status suppression"
+fi
+echo ""
+
+echo "8. Checking Documentation"
 echo "-------------------------------------------------------------------"
 check_file "MULTI_CLOUD_CI_CD.md" "Multi-cloud guide"
 check_file "README.md" "Main README"
