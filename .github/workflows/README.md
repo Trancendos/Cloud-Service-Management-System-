@@ -28,7 +28,34 @@ This directory contains GitHub Actions workflows for the Cloud Service Managemen
 - ✅ Reduces manual maintenance burden
 - ✅ Maintains compliance with GitHub Actions best practices
 
-### 2. Example CI with Cache (`example-ci.yml`)
+### 2. AI Code Review (`ai-code-review.yml`)
+
+**Purpose**: Automatically reviews pull requests for security vulnerabilities, code quality issues, style consistency, and best practices.
+
+**Triggers**:
+- **Pull Request Events**: Opens, updates, or reopens
+- **Pull Request Reviews**: When reviews are submitted
+
+**What It Does**:
+1. Analyzes all changed code files in the PR
+2. Detects potential issues in multiple categories:
+   - 🔒 **Security**: Hardcoded secrets, SQL injection risks
+   - 📊 **Code Quality**: TODO comments, code smells
+   - 🎨 **Style**: Debug statements, formatting issues
+   - ✨ **Best Practices**: Error handling, coding standards
+3. Posts a detailed review report as a PR comment
+4. Updates the same comment on subsequent commits
+
+**Benefits**:
+- ✅ Automated code quality checks
+- ✅ Early detection of security vulnerabilities
+- ✅ Consistent code review standards
+- ✅ Detailed feedback for developers
+- ✅ Zero configuration required
+
+**Documentation**: See [AI_CODE_REVIEW.md](AI_CODE_REVIEW.md) for detailed information.
+
+### 3. Example CI with Cache (`example-ci.yml`)
 
 **Purpose**: Demonstrates proper usage of `actions/cache@v4` and other modern actions.
 
@@ -38,7 +65,7 @@ This directory contains GitHub Actions workflows for the Cloud Service Managemen
 - Uses `actions/setup-node@v4` for Node.js setup
 - Provides a template for CI workflows
 
-### 3. Checkpoint Workflow with Dummy Data (`checkpoint-workflow.yml`)
+### 4. Checkpoint Workflow with Dummy Data (`checkpoint-workflow.yml`)
 
 **Purpose**: Validates workflow operations using dummy data and simulated service accounts for testing and verification.
 
@@ -85,7 +112,7 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ Provides checkpoint-based verification
 - ✅ Ensures system reliability through continuous testing
 - ✅ Safe testing environment with dummy data only
-### 3. Workflow Run Notifications (`workflow-notifications.yml`)
+### 5. Workflow Run Notifications (`workflow-notifications.yml`)
 
 **Purpose**: Automatically sends notifications when workflows complete.
 
@@ -110,7 +137,7 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ Automatic PR comments for workflow results
 - ✅ Configurable via repository variables
 
-### 4. Pull Request Notifications (`pr-notifications.yml`)
+### 6. Pull Request Notifications (`pr-notifications.yml`)
 
 **Purpose**: Automatically sends notifications when PRs are created or updated.
 
@@ -137,7 +164,7 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ Direct links to pull requests
 - ✅ Configurable via repository variables
 
-### 5. Test Notifications (`test-notifications.yml`)
+### 7. Test Notifications (`test-notifications.yml`)
 
 **Purpose**: Test workflow to verify notification system configuration.
 
