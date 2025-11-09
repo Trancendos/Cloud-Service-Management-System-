@@ -6,12 +6,29 @@ This directory contains comprehensive documentation for the Cloud Service Manage
 
 ### AI & Automation
 
+- **[AI Code Review Reports](AI-CODE-REVIEW-REPORTS.md)** - Complete guide to AI-powered code review
+  - Report format and types
+  - Security, quality, and style checks
+  - Supported languages and customization
+  - Best practices for handling findings
+
+- **[AI Data Validation Reports](AI-DATA-VALIDATION-REPORTS.md)** - Complete guide to AI-powered data validation
+  - Validation rules for JSON, YAML, and Markdown
+  - Security scanning and smart filtering
+  - Test data recognition
+  - Troubleshooting and customization
+
+- **[AI Data Validation Fix](AI-DATA-VALIDATION-FIX.md)** - Technical details on false-positive handling
+  - Problem statement and root cause
+  - Solution implementation
+  - Testing results and benefits
+
 - **[AI Review Reports - Quick Reference](AI-REVIEW-QUICK-REF.md)** - ⚡ Quick guide for handling AI review reports
   - **Start here** if you see an AI review report
   - Decision tree and quick actions
   - Common scenarios
   
-- **[AI Review Reports - Full Guide](AI-REVIEW-REPORTS.md)** - Complete guide to understanding AI Code Review Reports
+- **[AI Review Reports - Full Guide](AI-REVIEW-REPORTS.md)** - Alternative guide to understanding AI Code Review Reports
   - Report format and types
   - Best practices for handling findings  
   - Important: Why AI reports should NOT be converted to issues
