@@ -4,6 +4,8 @@
 
 This repository uses automated AI-powered code review to provide instant feedback on pull requests. The AI Code Review Bot analyzes code changes and posts detailed reports as comments.
 
+> **⚠️ Important:** AI review comments are informational status updates, not actionable issues. Please address findings within the pull request itself rather than creating separate issue tickets. See the [AI Code Review Guide](AI-CODE-REVIEW-GUIDE.md) for more details.
+
 ## Report Format
 
 AI Code Review Reports follow this structure:
@@ -143,3 +145,5 @@ All AI Code Review Reports are preserved as:
 ---
 
 **Note**: AI Code Review Reports are automated suggestions. They complement, but don't replace, human code review. Use your judgment when addressing findings.
+
+**Important**: These reports are informational comments and should NOT be converted into separate issues. Address findings directly in the pull request.
