@@ -111,10 +111,42 @@ jobs:
                                   f"⚠️ {filepath}: Contains example.com placeholder link"
                               )
                       
-                      # Check for TODO/FIXME comments
-                      if re.search(r'\b(TODO|FIXME|XXX)\b', content, re.IGNORECASE):
+                      # Check for TODO/FIXME comments - but exclude documentation contexts
+                      # Skip if TODO/FIXME appears in:
+                      # - List items (lines starting with -, *, or numbers)
+                      # - Code blocks (between ``` or indented with 4+ spaces)
+                      # - Headers (lines starting with #)
+                      # Only flag patterns like "TODO:" or "FIXME:" to avoid false positives
+                      lines = content.split('\n')
+                      in_code_block = False
+                      found_actionable_todo = False
+                      
+                      for line in lines:
+                          # Track code blocks
+                          if line.strip().startswith('```'):
+                              in_code_block = not in_code_block
+                              continue
+                          
+                          # Skip if in code block
+                          if in_code_block:
+                              continue
+                          
+                          # Skip if it's a header
+                          if line.strip().startswith('#'):
+                              continue
+                          
+                          # Skip if it's a list item or indented (documentation context)
+                          if re.match(r'^\s*[-*+]\s', line) or re.match(r'^\s*\d+\.\s', line) or line.startswith('    '):
+                              continue
+                          
+                          # Check for actionable TODO/FIXME patterns (with colon)
+                          if re.search(r'\b(TODO|FIXME|XXX)\s*:', line, re.IGNORECASE):
+                              found_actionable_todo = True
+                              break
+                      
+                      if found_actionable_todo:
                           self.results['suggestions'].append(
-                              f"💡 {filepath}: Contains TODO/FIXME markers"
+                              f"💡 {filepath}: Contains actionable TODO/FIXME markers"
                           )
                       
                       self.results['valid'].append(f"✅ {filepath}: Markdown checked")
