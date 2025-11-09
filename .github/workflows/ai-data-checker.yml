@@ -292,6 +292,18 @@ jobs:
             comment += `- 💡 Suggestions: ${suggestion_count}\n\n`;
             comment += `Check the workflow logs for detailed information.`;
             
+            // Check if a comment already exists
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const botComment = comments.data.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('🤖 AI Data Validation Report')
+            );
+
             // Find existing comment from this workflow
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,

@@ -134,6 +134,11 @@ jobs:
                 'Please address the findings above rather than converting this comment into an issue.\n';
             }
 
+            // Check if a comment already exists
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
             // Find existing comment from this workflow
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
@@ -146,6 +151,29 @@ jobs:
               c.body.includes('🤖 AI Code Review Report')
             );
             
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🤖 AI Code Review Report')
+            );
+
             if (botComment) {
               // Update existing comment
               await github.rest.issues.updateComment({
