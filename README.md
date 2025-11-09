@@ -45,6 +45,7 @@ Management and deployment of GitHub services at 0 costs models
 - 🤖 **AI Code Review**: Automated code review on pull requests with security and quality analysis
 - 📄 **AI Data Validation**: Automated validation of JSON, YAML, and Markdown files with smart security checks
 - ✅ **Checkpoint Testing**: Validates workflow operations with dummy data and simulated service accounts
+- 🤖 **AI Data Validation**: Automated validation of data files with PR comments
 - 🎯 **Zero-Cost Model**: Leverages GitHub's free tier for service management
 - 📊 **Continuous Validation**: Daily automated testing ensures system reliability
 
@@ -99,6 +100,9 @@ This repository includes automated AI-powered data validation that ensures data 
 This repository includes several GitHub Actions workflows:
 
 1. **Auto-fix Deprecated Actions** - Automatically updates deprecated actions to latest versions
+2. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
+3. **Checkpoint Workflow with Dummy Data** - Validates operations with simulated test scenarios
+4. **AI Data Validation** - Validates JSON and YAML data files on every PR
 2. **AI Code Review** - Automated code review for pull requests with security and quality checks
 3. **AI Data Validation** - Validates JSON, YAML, and Markdown files with smart security scanning
 4. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
@@ -128,6 +132,19 @@ The `test-data/` directory contains:
 - `dummy-workflow-data.json` - Test scenarios and expected outcomes
 
 ⚠️ **Note**: All test data uses dummy credentials for simulation only.
+
+### Data Validation
+
+The repository includes automated data validation that runs on every PR:
+- Validates JSON files in `test-data/`
+- Validates YAML configuration files for all supported platforms
+- Posts validation reports as PR comments
+- All critical data files are validated
+
+Run validation manually:
+```bash
+./scripts/validate-data.sh
+```
 
 ## Documentation
 

@@ -85,7 +85,51 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ Provides checkpoint-based verification
 - ✅ Ensures system reliability through continuous testing
 - ✅ Safe testing environment with dummy data only
-### 3. Workflow Run Notifications (`workflow-notifications.yml`)
+
+### 4. AI Data Validation (`ai-data-validation.yml`)
+
+**Purpose**: Automatically validates JSON and YAML data files to ensure data integrity across the repository.
+
+**Triggers**:
+- **Pull Requests**: When data files are modified in PRs
+- **Push to Main**: When changes are merged to main branch
+- **Manual**: Can be triggered manually via workflow_dispatch
+
+**What It Does**:
+1. Validates JSON files in `test-data/`:
+   - `dummy-service-accounts.json`
+   - `dummy-workflow-data.json`
+2. Validates platform configuration YAML files:
+   - Azure Pipelines configuration
+   - Google Cloud Build configuration
+   - AWS CodeBuild configuration
+   - GitLab CI/CD configuration
+   - CircleCI configuration
+3. Posts validation report as PR comment with results
+4. Fails the workflow if any files are invalid
+
+**Validation Report Format**:
+```
+🤖 AI Data Validation Report
+
+✅ All data files passed validation!
+
+Summary:
+- ✅ Valid Files: 7
+- ❌ Invalid Files: 0
+- ⚠️ Warnings: 0
+
+Check the workflow logs for detailed information.
+```
+
+**Benefits**:
+- ✅ Ensures data integrity before merging
+- ✅ Catches JSON/YAML syntax errors early
+- ✅ Automated PR feedback on data quality
+- ✅ Validates critical configuration files
+- ✅ Can be run manually for local validation: `./scripts/validate-data.sh`
+
+### 5. Workflow Run Notifications (`workflow-notifications.yml`)
 
 **Purpose**: Automatically sends notifications when workflows complete.
 
@@ -110,7 +154,7 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ Automatic PR comments for workflow results
 - ✅ Configurable via repository variables
 
-### 4. Pull Request Notifications (`pr-notifications.yml`)
+### 6. Pull Request Notifications (`pr-notifications.yml`)
 
 **Purpose**: Automatically sends notifications when PRs are created or updated.
 
@@ -137,7 +181,7 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ Direct links to pull requests
 - ✅ Configurable via repository variables
 
-### 5. Test Notifications (`test-notifications.yml`)
+### 7. Test Notifications (`test-notifications.yml`)
 
 **Purpose**: Test workflow to verify notification system configuration.
 
