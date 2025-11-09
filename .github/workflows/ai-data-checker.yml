@@ -238,9 +238,10 @@ jobs:
         with:
           script: |
             const validation_passed = '${{ steps.data-check.outputs.validation_passed }}' === 'true';
-            const invalid_count = '${{ steps.data-check.outputs.invalid_count }}';
-            const warning_count = '${{ steps.data-check.outputs.warning_count }}';
-            const valid_count = '${{ steps.data-check.outputs.valid_count }}';
+            // Parse counts as integers to ensure they're numeric values
+            const invalid_count = parseInt('${{ steps.data-check.outputs.invalid_count }}') || 0;
+            const warning_count = parseInt('${{ steps.data-check.outputs.warning_count }}') || 0;
+            const valid_count = parseInt('${{ steps.data-check.outputs.valid_count }}') || 0;
             
             let comment = '## 🤖 AI Data Validation Report\n\n';
             
@@ -251,9 +252,9 @@ jobs:
             }
             
             comment += `**Summary:**\n`;
-            comment += `- ✅ Valid Files: ${valid_count}\n`;
-            comment += `- ❌ Invalid Files: ${invalid_count}\n`;
-            comment += `- ⚠️ Warnings: ${warning_count}\n\n`;
+            comment += `- Valid Files: ${valid_count}\n`;
+            comment += `- Invalid Files: ${invalid_count}\n`;
+            comment += `- Warnings: ${warning_count}\n\n`;
             comment += `Check the workflow logs for detailed information.`;
             
             github.rest.issues.createComment({
