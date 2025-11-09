@@ -111,10 +111,42 @@ jobs:
                                   f"⚠️ {filepath}: Contains example.com placeholder link"
                               )
                       
-                      # Check for TODO/FIXME comments
-                      if re.search(r'\b(TODO|FIXME|XXX)\b', content, re.IGNORECASE):
+                      # Check for TODO/FIXME comments - but exclude documentation contexts
+                      # Skip if TODO/FIXME appears in:
+                      # - List items (lines starting with -, *, or numbers)
+                      # - Code blocks (between ``` or indented with 4+ spaces)
+                      # - Headers (lines starting with #)
+                      # Only flag patterns like "TODO:" or "FIXME:" to avoid false positives
+                      lines = content.split('\n')
+                      in_code_block = False
+                      found_actionable_todo = False
+                      
+                      for line in lines:
+                          # Track code blocks
+                          if line.strip().startswith('```'):
+                              in_code_block = not in_code_block
+                              continue
+                          
+                          # Skip if in code block
+                          if in_code_block:
+                              continue
+                          
+                          # Skip if it's a header
+                          if line.strip().startswith('#'):
+                              continue
+                          
+                          # Skip if it's a list item or indented (documentation context)
+                          if re.match(r'^\s*[-*+]\s', line) or re.match(r'^\s*\d+\.\s', line) or line.startswith('    '):
+                              continue
+                          
+                          # Check for actionable TODO/FIXME patterns (with colon)
+                          if re.search(r'\b(TODO|FIXME|XXX)\s*:', line, re.IGNORECASE):
+                              found_actionable_todo = True
+                              break
+                      
+                      if found_actionable_todo:
                           self.results['suggestions'].append(
-                              f"💡 {filepath}: Contains TODO/FIXME markers"
+                              f"💡 {filepath}: Contains actionable TODO/FIXME markers"
                           )
                       
                       self.results['valid'].append(f"✅ {filepath}: Markdown checked")
@@ -227,6 +259,7 @@ jobs:
               f.write(f"validation_passed={str(success).lower()}\n")
               f.write(f"invalid_count={len(checker.results['invalid'])}\n")
               f.write(f"warning_count={len(checker.results['warnings'])}\n")
+              f.write(f"suggestion_count={len(checker.results['suggestions'])}\n")
               f.write(f"valid_count={len(checker.results['valid'])}\n")
           
           exit(0 if success else 1)
@@ -240,20 +273,23 @@ jobs:
             const validation_passed = '${{ steps.data-check.outputs.validation_passed }}' === 'true';
             const invalid_count = '${{ steps.data-check.outputs.invalid_count }}';
             const warning_count = '${{ steps.data-check.outputs.warning_count }}';
+            const suggestion_count = '${{ steps.data-check.outputs.suggestion_count }}';
             const valid_count = '${{ steps.data-check.outputs.valid_count }}';
             
             let comment = '## 🤖 AI Data Validation Report\n\n';
             
-            if (validation_passed) {
+            // Check both validation_passed flag and invalid_count to ensure correct message
+            if (validation_passed || invalid_count === '0') {
               comment += '✅ All data files passed validation!\n\n';
             } else {
-              comment += '❌ Some data files have validation errors.\n\n';
+              comment += '❌ Some data files failed validation\n\n';
             }
             
             comment += `**Summary:**\n`;
             comment += `- ✅ Valid Files: ${valid_count}\n`;
             comment += `- ❌ Invalid Files: ${invalid_count}\n`;
-            comment += `- ⚠️ Warnings: ${warning_count}\n\n`;
+            comment += `- ⚠️ Warnings: ${warning_count}\n`;
+            comment += `- 💡 Suggestions: ${suggestion_count}\n\n`;
             comment += `Check the workflow logs for detailed information.`;
             
             // Check if a comment already exists
@@ -268,6 +304,18 @@ jobs:
               c.body.includes('🤖 AI Data Validation Report')
             );
 
+            // Find existing comment from this workflow
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && 
+              c.body.includes('🤖 AI Data Validation Report')
+            );
+            
             if (botComment) {
               // Update existing comment
               await github.rest.issues.updateComment({
@@ -293,3 +341,4 @@ jobs:
           echo "Valid Files: ${{ steps.data-check.outputs.valid_count }}"
           echo "Invalid Files: ${{ steps.data-check.outputs.invalid_count }}"
           echo "Warnings: ${{ steps.data-check.outputs.warning_count }}"
+          echo "Suggestions: ${{ steps.data-check.outputs.suggestion_count }}"
