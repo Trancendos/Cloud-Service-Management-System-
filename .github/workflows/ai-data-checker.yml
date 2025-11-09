@@ -256,12 +256,35 @@ jobs:
             comment += `- ⚠️ Warnings: ${warning_count}\n\n`;
             comment += `Check the workflow logs for detailed information.`;
             
-            github.rest.issues.createComment({
+            // Find existing comment from this workflow
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: comment
             });
+            
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && 
+              c.body.includes('🤖 AI Data Validation Report')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
       
       - name: Data Check Summary
         run: |
