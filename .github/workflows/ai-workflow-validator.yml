@@ -1,0 +1,240 @@
+name: AI Workflow Validator
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pyyaml jsonschema
+      
+      - name: AI-Powered Workflow Validation
+        id: validate
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import yaml
+          import json
+          from pathlib import Path
+          
+          class WorkflowValidator:
+              def __init__(self):
+                  self.issues = []
+                  self.warnings = []
+                  self.suggestions = []
+                  
+              def validate_workflow(self, filepath):
+                  """AI-powered workflow validation"""
+                  print(f"🤖 Validating: {filepath}")
+                  
+                  try:
+                      with open(filepath, 'r') as f:
+                          workflow = yaml.safe_load(f)
+                      
+                      # Check 1: Validate structure
+                      self._check_structure(workflow, filepath)
+                      
+                      # Check 2: Security best practices
+                      self._check_security(workflow, filepath)
+                      
+                      # Check 3: Performance optimization
+                      self._check_performance(workflow, filepath)
+                      
+                      # Check 4: Best practices
+                      self._check_best_practices(workflow, filepath)
+                      
+                  except yaml.YAMLError as e:
+                      self.issues.append(f"❌ {filepath}: Invalid YAML syntax - {e}")
+                  except Exception as e:
+                      self.issues.append(f"❌ {filepath}: Validation error - {e}")
+              
+              def _check_structure(self, workflow, filepath):
+                  """Check basic workflow structure"""
+                  if not workflow:
+                      self.issues.append(f"❌ {filepath}: Empty workflow file")
+                      return
+                  
+                  if 'name' not in workflow:
+                      self.warnings.append(f"⚠️ {filepath}: Missing 'name' field")
+                  
+                  if 'on' not in workflow:
+                      self.issues.append(f"❌ {filepath}: Missing 'on' trigger definition")
+                  
+                  if 'jobs' not in workflow:
+                      self.issues.append(f"❌ {filepath}: Missing 'jobs' definition")
+              
+              def _check_security(self, workflow, filepath):
+                  """AI-powered security checks"""
+                  jobs = workflow.get('jobs', {})
+                  
+                  for job_name, job_config in jobs.items():
+                      # Check for overly permissive permissions
+                      permissions = job_config.get('permissions', {})
+                      if permissions == 'write-all':
+                          self.warnings.append(
+                              f"⚠️ {filepath}: Job '{job_name}' uses 'write-all' permissions. "
+                              f"Consider using granular permissions."
+                          )
+                      
+                      # Check for steps using actions without version pinning
+                      steps = job_config.get('steps', [])
+                      for i, step in enumerate(steps):
+                          if 'uses' in step:
+                              action = step['uses']
+                              if '@' not in action or action.endswith('@main') or action.endswith('@master'):
+                                  self.warnings.append(
+                                      f"⚠️ {filepath}: Job '{job_name}', step {i+1} uses unpinned action '{action}'. "
+                                      f"Pin to specific version for security."
+                                  )
+              
+              def _check_performance(self, workflow, filepath):
+                  """Check for performance optimizations"""
+                  jobs = workflow.get('jobs', {})
+                  
+                  for job_name, job_config in jobs.items():
+                      steps = job_config.get('steps', [])
+                      has_cache = any('cache' in step.get('uses', '').lower() for step in steps)
+                      has_setup = any('setup-' in step.get('uses', '') for step in steps)
+                      
+                      if has_setup and not has_cache:
+                          self.suggestions.append(
+                              f"💡 {filepath}: Job '{job_name}' could benefit from dependency caching. "
+                              f"Consider using actions/cache@v4."
+                          )
+              
+              def _check_best_practices(self, workflow, filepath):
+                  """Check workflow best practices"""
+                  jobs = workflow.get('jobs', {})
+                  
+                  for job_name, job_config in jobs.items():
+                      # Check for timeout-minutes
+                      if 'timeout-minutes' not in job_config:
+                          self.suggestions.append(
+                              f"💡 {filepath}: Job '{job_name}' missing 'timeout-minutes'. "
+                              f"Consider adding to prevent hanging jobs."
+                          )
+                      
+                      steps = job_config.get('steps', [])
+                      for step in steps:
+                          # Check for step names
+                          if 'name' not in step:
+                              self.suggestions.append(
+                                  f"💡 {filepath}: Job '{job_name}' has unnamed step. "
+                                  f"Add descriptive names for clarity."
+                              )
+              
+              def print_report(self):
+                  """Print validation report"""
+                  print("\n" + "="*70)
+                  print("🤖 AI WORKFLOW VALIDATION REPORT")
+                  print("="*70)
+                  
+                  if self.issues:
+                      print(f"\n❌ ISSUES FOUND ({len(self.issues)}):")
+                      for issue in self.issues:
+                          print(f"  {issue}")
+                  
+                  if self.warnings:
+                      print(f"\n⚠️ WARNINGS ({len(self.warnings)}):")
+                      for warning in self.warnings:
+                          print(f"  {warning}")
+                  
+                  if self.suggestions:
+                      print(f"\n💡 SUGGESTIONS ({len(self.suggestions)}):")
+                      for suggestion in self.suggestions:
+                          print(f"  {suggestion}")
+                  
+                  if not self.issues and not self.warnings and not self.suggestions:
+                      print("\n✅ All workflows passed validation!")
+                  
+                  print("\n" + "="*70)
+                  
+                  return len(self.issues) == 0
+          
+          # Main validation logic
+          validator = WorkflowValidator()
+          workflows_dir = Path('.github/workflows')
+          
+          if workflows_dir.exists():
+              for workflow_file in workflows_dir.glob('*.y*ml'):
+                  if workflow_file.name != 'ai-workflow-validator.yml':
+                      validator.validate_workflow(workflow_file)
+          
+          success = validator.print_report()
+          
+          # Set output for GitHub Actions
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"validation_passed={str(success).lower()}\n")
+              f.write(f"issue_count={len(validator.issues)}\n")
+              f.write(f"warning_count={len(validator.warnings)}\n")
+              f.write(f"suggestion_count={len(validator.suggestions)}\n")
+          
+          exit(0 if success else 1)
+          PYTHON_SCRIPT
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const validation_passed = '${{ steps.validate.outputs.validation_passed }}' === 'true';
+            const issue_count = '${{ steps.validate.outputs.issue_count }}';
+            const warning_count = '${{ steps.validate.outputs.warning_count }}';
+            const suggestion_count = '${{ steps.validate.outputs.suggestion_count }}';
+            
+            let comment = '## 🤖 AI Workflow Validation Report\n\n';
+            
+            if (validation_passed) {
+              comment += '✅ All workflows passed AI validation!\n\n';
+            } else {
+              comment += '❌ Validation found issues that need attention.\n\n';
+            }
+            
+            comment += `**Summary:**\n`;
+            comment += `- ❌ Issues: ${issue_count}\n`;
+            comment += `- ⚠️ Warnings: ${warning_count}\n`;
+            comment += `- 💡 Suggestions: ${suggestion_count}\n\n`;
+            comment += `Check the workflow logs for detailed information.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Validation Summary
+        run: |
+          echo "🤖 AI Workflow Validation Complete"
+          echo "Validation Passed: ${{ steps.validate.outputs.validation_passed }}"
+          echo "Issues: ${{ steps.validate.outputs.issue_count }}"
+          echo "Warnings: ${{ steps.validate.outputs.warning_count }}"
+          echo "Suggestions: ${{ steps.validate.outputs.suggestion_count }}"

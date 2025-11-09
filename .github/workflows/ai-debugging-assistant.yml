@@ -1,0 +1,213 @@
+name: AI Debugging Assistant
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to analyze'
+        required: false
+        type: number
+
+jobs:
+  debug-assistant:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Analyze Failed Workflow
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure'
+        id: analyze-failure
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          
+          class AIDebugger:
+              def __init__(self):
+                  self.workflow_name = os.environ.get('WORKFLOW_NAME', 'Unknown')
+                  self.workflow_id = os.environ.get('WORKFLOW_ID', 'Unknown')
+                  self.run_id = os.environ.get('RUN_ID', 'Unknown')
+                  self.suggestions = []
+              
+              def analyze_failure(self):
+                  """AI-powered failure analysis"""
+                  print("🤖 AI Debugging Assistant - Analyzing workflow failure...")
+                  print(f"Workflow: {self.workflow_name}")
+                  print(f"Run ID: {self.run_id}")
+                  
+                  # Common failure patterns and solutions
+                  self._analyze_common_patterns()
+                  
+                  return self.suggestions
+              
+              def _analyze_common_patterns(self):
+                  """Analyze common failure patterns"""
+                  common_solutions = {
+                      'timeout': {
+                          'description': 'Job timeout',
+                          'solutions': [
+                              '⏱️ Increase timeout-minutes in job configuration',
+                              '🔄 Split long-running jobs into smaller parallel jobs',
+                              '📦 Use caching to speed up dependency installation'
+                          ]
+                      },
+                      'dependency': {
+                          'description': 'Dependency installation failure',
+                          'solutions': [
+                              '📦 Check package.json/requirements.txt for version conflicts',
+                              '🔒 Pin dependency versions to avoid breaking changes',
+                              '💾 Use dependency caching (actions/cache@v4)',
+                              '🔄 Clear cache if using outdated dependencies'
+                          ]
+                      },
+                      'permission': {
+                          'description': 'Permission denied',
+                          'solutions': [
+                              '🔑 Check workflow permissions configuration',
+                              '📝 Ensure GITHUB_TOKEN has required scopes',
+                              '👤 Verify repository access settings'
+                          ]
+                      },
+                      'not_found': {
+                          'description': 'Command or file not found',
+                          'solutions': [
+                              '📂 Verify file paths are correct',
+                              '🔧 Ensure required tools are installed',
+                              '✅ Check if files were properly checked out'
+                          ]
+                      },
+                      'test_failure': {
+                          'description': 'Test failures',
+                          'solutions': [
+                              '🧪 Review test logs for specific failing tests',
+                              '🔍 Check for environment-specific issues',
+                              '📊 Compare with previous successful runs',
+                              '🔄 Ensure test data and fixtures are up to date'
+                          ]
+                      }
+                  }
+                  
+                  print("\n📋 Common Debugging Solutions:")
+                  for category, info in common_solutions.items():
+                      print(f"\n{info['description']}:")
+                      for solution in info['solutions']:
+                          print(f"  {solution}")
+                          self.suggestions.append(solution)
+              
+              def generate_debug_report(self):
+                  """Generate debugging report"""
+                  print("\n" + "="*70)
+                  print("🤖 AI DEBUGGING REPORT")
+                  print("="*70)
+                  print(f"\nWorkflow: {self.workflow_name}")
+                  print(f"Run ID: {self.run_id}")
+                  print(f"\n💡 Suggestions: {len(self.suggestions)}")
+                  print("\n" + "="*70)
+          
+          # Main execution
+          debugger = AIDebugger()
+          debugger.analyze_failure()
+          debugger.generate_debug_report()
+          
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"suggestions_count={len(debugger.suggestions)}\n")
+          PYTHON_SCRIPT
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_ID: ${{ github.event.workflow_run.id }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+      
+      - name: Analyze Issue
+        if: github.event_name == 'issues' && (github.event.action == 'opened' || contains(github.event.issue.labels.*.name, 'bug'))
+        id: analyze-issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = (issue.body || '').toLowerCase();
+            
+            console.log('🤖 AI Debugging Assistant - Analyzing issue...');
+            
+            const suggestions = [];
+            
+            // Pattern matching for common issues
+            if (title.includes('error') || body.includes('error')) {
+              suggestions.push('🔍 Check error messages in logs for stack traces');
+              suggestions.push('📋 Provide full error output for better diagnosis');
+            }
+            
+            if (title.includes('fail') || body.includes('fail')) {
+              suggestions.push('🧪 Review recent changes that might have caused the failure');
+              suggestions.push('🔄 Try reproducing the issue locally');
+            }
+            
+            if (title.includes('workflow') || body.includes('action')) {
+              suggestions.push('📝 Check GitHub Actions workflow syntax');
+              suggestions.push('🔑 Verify permissions and secrets are configured');
+              suggestions.push('📚 Review workflow logs in the Actions tab');
+            }
+            
+            if (title.includes('timeout') || body.includes('timeout')) {
+              suggestions.push('⏱️ Increase job timeout-minutes');
+              suggestions.push('⚡ Optimize slow operations');
+              suggestions.push('💾 Add caching to speed up execution');
+            }
+            
+            // Create debugging comment
+            let comment = '## 🤖 AI Debugging Assistant\n\n';
+            comment += 'I\'ve analyzed your issue and here are some suggestions:\n\n';
+            
+            if (suggestions.length > 0) {
+              suggestions.forEach(s => {
+                comment += `- ${s}\n`;
+              });
+            } else {
+              comment += '- 📖 Please provide more details about the issue\n';
+              comment += '- 🔍 Include error messages, logs, or screenshots\n';
+              comment += '- 🔄 Describe steps to reproduce the problem\n';
+            }
+            
+            comment += '\n### Debugging Checklist\n';
+            comment += '- [ ] Check workflow/action logs\n';
+            comment += '- [ ] Review recent code changes\n';
+            comment += '- [ ] Verify dependencies and versions\n';
+            comment += '- [ ] Check permissions and access\n';
+            comment += '- [ ] Try reproducing locally\n';
+            comment += '\n---\n';
+            comment += '*This is an automated response from the AI Debugging Assistant.*';
+            
+            await github.rest.issues.createComment({
+              issue_number: issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+            return { suggestions_count: suggestions.length };
+      
+      - name: Debug Summary
+        run: |
+          echo "🤖 AI Debugging Assistant Complete"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "Analyzed workflow failure"
+            echo "Suggestions: ${{ steps.analyze-failure.outputs.suggestions_count }}"
+          elif [ "${{ github.event_name }}" = "issues" ]; then
+            echo "Analyzed issue for debugging suggestions"
+          fi

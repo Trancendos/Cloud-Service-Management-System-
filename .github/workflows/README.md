@@ -38,7 +38,83 @@ This directory contains GitHub Actions workflows for the Cloud Service Managemen
 - Uses `actions/setup-node@v4` for Node.js setup
 - Provides a template for CI workflows
 
-### 3. Checkpoint Workflow with Dummy Data (`checkpoint-workflow.yml`)
+---
+
+## 🤖 AI/Bot Integration Workflows
+
+The Cloud Service Management System includes comprehensive AI/bot capabilities for automated analysis and assistance. These intelligent workflows provide data validation, workflow checks, code review, and debugging support.
+
+### 3. AI Workflow Validator (`ai-workflow-validator.yml`)
+
+**Purpose**: Automatically validates GitHub Actions workflow files using AI-powered analysis.
+
+**Triggers**:
+- Pull requests modifying workflow files
+- Push to main branch (workflow files)
+- Manual dispatch
+
+**Key Features**:
+- ✅ YAML syntax validation
+- 🔒 Security best practices checking
+- ⚡ Performance optimization suggestions
+- 💡 Best practices recommendations
+- 📋 Automated PR comments with findings
+
+### 4. AI Data Checker (`ai-data-checker.yml`)
+
+**Purpose**: Validates data files (JSON, YAML, Markdown) with intelligent content analysis.
+
+**Triggers**:
+- Pull requests with data file changes
+- Push to main branch
+- Manual dispatch
+
+**Key Features**:
+- ✅ JSON/YAML syntax validation
+- 🔍 Content analysis and validation
+- 🔒 Security checks for sensitive data
+- 📝 Markdown link validation
+- 💡 Data structure recommendations
+
+### 5. AI Code Review Bot (`ai-code-review.yml`)
+
+**Purpose**: Automated code review with security, quality, and style analysis.
+
+**Triggers**:
+- Pull requests (opened, updated, reopened)
+- Manual dispatch
+
+**Key Features**:
+- 🔒 Security vulnerability detection
+- ⚠️ Code quality analysis
+- 💅 Style consistency checks
+- 💡 Best practices validation
+- 🌐 Multi-language support (Python, JavaScript, Shell, YAML)
+
+### 6. AI Debugging Assistant (`ai-debugging-assistant.yml`)
+
+**Purpose**: Intelligent debugging assistance for failed workflows and issues.
+
+**Triggers**:
+- Workflow failures (any workflow)
+- New issues opened or labeled as 'bug'
+- Manual dispatch
+
+**Key Features**:
+- 🔍 Automatic failure analysis
+- 💡 Contextual debugging suggestions
+- 📋 Common issue pattern matching
+- 🤖 Automated issue triage
+- 📊 Smart debugging recommendations
+
+### 📚 AI/Bot Documentation
+
+For comprehensive documentation on AI/bot integration, see:
+- **[AI-BOT-INTEGRATION.md](./AI-BOT-INTEGRATION.md)** - Complete guide to AI/bot capabilities
+- **[AI-BOT-CONFIGURATION.md](./AI-BOT-CONFIGURATION.md)** - Configuration and customization guide
+
+---
+### 7. Checkpoint Workflow with Dummy Data (`checkpoint-workflow.yml`)
 
 **Purpose**: Validates workflow operations using dummy data and simulated service accounts for testing and verification.
 

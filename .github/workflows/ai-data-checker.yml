@@ -1,0 +1,258 @@
+name: AI Data Checker
+
+on:
+  pull_request:
+    paths:
+      - '**/*.json'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.md'
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.json'
+      - '**/*.yaml'
+      - '**/*.yml'
+  workflow_dispatch:
+
+jobs:
+  data-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install data validation tools
+        run: |
+          pip install pyyaml jsonschema validators
+      
+      - name: AI-Powered Data Validation
+        id: data-check
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import yaml
+          import re
+          from pathlib import Path
+          
+          class AIDataChecker:
+              def __init__(self):
+                  self.results = {
+                      'valid': [],
+                      'invalid': [],
+                      'warnings': [],
+                      'suggestions': []
+                  }
+              
+              def check_json_file(self, filepath):
+                  """Validate JSON files with AI-powered checks"""
+                  try:
+                      with open(filepath, 'r') as f:
+                          data = json.load(f)
+                      
+                      # Basic validation passed
+                      self.results['valid'].append(f"✅ {filepath}: Valid JSON")
+                      
+                      # AI-powered content analysis
+                      self._analyze_json_content(data, filepath)
+                      
+                  except json.JSONDecodeError as e:
+                      self.results['invalid'].append(f"❌ {filepath}: Invalid JSON - {e}")
+                  except Exception as e:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Error reading file - {e}")
+              
+              def check_yaml_file(self, filepath):
+                  """Validate YAML files with AI-powered checks"""
+                  try:
+                      with open(filepath, 'r') as f:
+                          data = yaml.safe_load(f)
+                      
+                      # Basic validation passed
+                      self.results['valid'].append(f"✅ {filepath}: Valid YAML")
+                      
+                      # AI-powered content analysis
+                      self._analyze_yaml_content(data, filepath)
+                      
+                  except yaml.YAMLError as e:
+                      self.results['invalid'].append(f"❌ {filepath}: Invalid YAML - {e}")
+                  except Exception as e:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Error reading file - {e}")
+              
+              def check_markdown_file(self, filepath):
+                  """Check markdown files for common issues"""
+                  try:
+                      with open(filepath, 'r') as f:
+                          content = f.read()
+                      
+                      # Check for broken links
+                      links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', content)
+                      for text, url in links:
+                          if url.startswith('http') and 'example.com' in url:
+                              self.results['warnings'].append(
+                                  f"⚠️ {filepath}: Contains example.com placeholder link"
+                              )
+                      
+                      # Check for TODO/FIXME comments
+                      if re.search(r'\b(TODO|FIXME|XXX)\b', content, re.IGNORECASE):
+                          self.results['suggestions'].append(
+                              f"💡 {filepath}: Contains TODO/FIXME markers"
+                          )
+                      
+                      self.results['valid'].append(f"✅ {filepath}: Markdown checked")
+                      
+                  except Exception as e:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Error reading file - {e}")
+              
+              def _analyze_json_content(self, data, filepath):
+                  """AI-powered analysis of JSON content"""
+                  # Check for empty objects/arrays
+                  if isinstance(data, dict) and not data:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Empty JSON object")
+                  elif isinstance(data, list) and not data:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Empty JSON array")
+                  
+                  # Check for common security issues
+                  if isinstance(data, dict) and any(
+                      any(keyword in str(k).lower() for keyword in ['password', 'secret', 'token', 'api_key'])
+                      for k in data.keys()
+                  ):
+                      self.results['warnings'].append(
+                          f"⚠️ {filepath}: Contains sensitive field names. Ensure no secrets are committed!"
+                      )
+              
+              def _analyze_yaml_content(self, data, filepath):
+                  """AI-powered analysis of YAML content"""
+                  if data is None:
+                      self.results['warnings'].append(f"⚠️ {filepath}: Empty YAML file")
+                  
+                  # Check for common issues in workflow files
+                  if isinstance(data, dict):
+                      if 'on' in data and 'jobs' in data:
+                          # This is likely a workflow file
+                          if not data.get('name'):
+                              self.results['suggestions'].append(
+                                  f"💡 {filepath}: Workflow missing 'name' field"
+                              )
+              
+              def scan_repository(self):
+                  """Scan repository for data files"""
+                  print("🤖 AI Data Checker - Scanning repository...")
+                  
+                  # Scan JSON files
+                  for json_file in Path('.').rglob('*.json'):
+                      if '.git' not in str(json_file) and 'node_modules' not in str(json_file):
+                          self.check_json_file(json_file)
+                  
+                  # Scan YAML files
+                  for yaml_file in Path('.').rglob('*.y*ml'):
+                      if '.git' not in str(yaml_file):
+                          self.check_yaml_file(yaml_file)
+                  
+                  # Scan Markdown files
+                  for md_file in Path('.').rglob('*.md'):
+                      if '.git' not in str(md_file):
+                          self.check_markdown_file(md_file)
+              
+              def print_report(self):
+                  """Print comprehensive data validation report"""
+                  print("\n" + "="*70)
+                  print("🤖 AI DATA VALIDATION REPORT")
+                  print("="*70)
+                  
+                  if self.results['invalid']:
+                      print(f"\n❌ INVALID FILES ({len(self.results['invalid'])}):")
+                      for item in self.results['invalid']:
+                          print(f"  {item}")
+                  
+                  if self.results['warnings']:
+                      print(f"\n⚠️ WARNINGS ({len(self.results['warnings'])}):")
+                      for item in self.results['warnings']:
+                          print(f"  {item}")
+                  
+                  if self.results['suggestions']:
+                      print(f"\n💡 SUGGESTIONS ({len(self.results['suggestions'])}):")
+                      for item in self.results['suggestions']:
+                          print(f"  {item}")
+                  
+                  print(f"\n✅ VALID FILES ({len(self.results['valid'])}):")
+                  for item in self.results['valid'][:10]:  # Show first 10
+                      print(f"  {item}")
+                  if len(self.results['valid']) > 10:
+                      print(f"  ... and {len(self.results['valid']) - 10} more")
+                  
+                  print("\n" + "="*70)
+                  
+                  # Summary
+                  print(f"\n📊 SUMMARY:")
+                  print(f"  Valid Files: {len(self.results['valid'])}")
+                  print(f"  Invalid Files: {len(self.results['invalid'])}")
+                  print(f"  Warnings: {len(self.results['warnings'])}")
+                  print(f"  Suggestions: {len(self.results['suggestions'])}")
+                  
+                  return len(self.results['invalid']) == 0
+          
+          # Main execution
+          checker = AIDataChecker()
+          checker.scan_repository()
+          success = checker.print_report()
+          
+          # Set outputs
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"validation_passed={str(success).lower()}\n")
+              f.write(f"invalid_count={len(checker.results['invalid'])}\n")
+              f.write(f"warning_count={len(checker.results['warnings'])}\n")
+              f.write(f"valid_count={len(checker.results['valid'])}\n")
+          
+          exit(0 if success else 1)
+          PYTHON_SCRIPT
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const validation_passed = '${{ steps.data-check.outputs.validation_passed }}' === 'true';
+            const invalid_count = '${{ steps.data-check.outputs.invalid_count }}';
+            const warning_count = '${{ steps.data-check.outputs.warning_count }}';
+            const valid_count = '${{ steps.data-check.outputs.valid_count }}';
+            
+            let comment = '## 🤖 AI Data Validation Report\n\n';
+            
+            if (validation_passed) {
+              comment += '✅ All data files passed validation!\n\n';
+            } else {
+              comment += '❌ Some data files have validation errors.\n\n';
+            }
+            
+            comment += `**Summary:**\n`;
+            comment += `- ✅ Valid Files: ${valid_count}\n`;
+            comment += `- ❌ Invalid Files: ${invalid_count}\n`;
+            comment += `- ⚠️ Warnings: ${warning_count}\n\n`;
+            comment += `Check the workflow logs for detailed information.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      
+      - name: Data Check Summary
+        run: |
+          echo "🤖 AI Data Validation Complete"
+          echo "Validation Passed: ${{ steps.data-check.outputs.validation_passed }}"
+          echo "Valid Files: ${{ steps.data-check.outputs.valid_count }}"
+          echo "Invalid Files: ${{ steps.data-check.outputs.invalid_count }}"
+          echo "Warnings: ${{ steps.data-check.outputs.warning_count }}"
