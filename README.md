@@ -46,6 +46,29 @@ Management and deployment of GitHub services at 0 costs models
 - ✅ **Checkpoint Testing**: Validates workflow operations with dummy data and simulated service accounts
 - 🎯 **Zero-Cost Model**: Leverages GitHub's free tier for service management
 - 📊 **Continuous Validation**: Daily automated testing ensures system reliability
+- 🤖 **AI Code Review**: Automated code analysis with security, quality, and style checks
+
+## 🤖 AI Code Review Reports
+
+This repository includes automated AI-powered code review that provides instant feedback on pull requests. The AI Code Review Bot analyzes code changes for:
+
+- 🔒 **Security vulnerabilities** - Detects hardcoded secrets, command injection, dangerous functions
+- ⚠️ **Code quality issues** - Identifies complexity, TODOs, and maintainability concerns  
+- 💅 **Style consistency** - Checks naming conventions and modern syntax usage
+- 💡 **Best practices** - Suggests improvements for error handling, performance, and testing
+
+### How It Works
+
+1. Open or update a pull request
+2. AI bot automatically reviews changed files
+3. Receive instant feedback as a PR comment
+4. View detailed findings in workflow logs
+
+### Supported Languages
+
+Python, JavaScript/TypeScript, Shell Scripts, YAML/Workflows
+
+📖 **[Read the AI Code Review Reports Guide](docs/AI-CODE-REVIEW-REPORTS.md)** for detailed information about report formats, customization, and best practices.
 
 ## Workflows
 
@@ -86,6 +109,7 @@ The `test-data/` directory contains:
 - [Workflows README](.github/workflows/README.md) - Detailed workflow documentation
 - [AI Review Reports Guide](docs/AI-REVIEW-REPORTS.md) - Understanding AI Code Review Reports
 - [Checkpoint Guide](CHECKPOINT-GUIDE.md) - Complete guide to checkpoint testing
+- [AI Code Review Reports](docs/AI-CODE-REVIEW-REPORTS.md) - Guide to automated code review reports
 - [Test Data README](test-data/README.md) - Information about test data structure
 - [All Documentation](docs/README.md) - Complete documentation index
 
