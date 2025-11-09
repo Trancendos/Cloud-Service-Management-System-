@@ -114,7 +114,7 @@ For comprehensive documentation on AI/bot integration, see:
 - **[AI-BOT-CONFIGURATION.md](./AI-BOT-CONFIGURATION.md)** - Configuration and customization guide
 
 ---
-### 3. Checkpoint Workflow with Dummy Data (`checkpoint-workflow.yml`)
+### 7. Checkpoint Workflow with Dummy Data (`checkpoint-workflow.yml`)
 
 **Purpose**: Validates workflow operations using dummy data and simulated service accounts for testing and verification.
 
