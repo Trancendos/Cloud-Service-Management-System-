@@ -42,6 +42,7 @@ Management and deployment of GitHub services at 0 costs models
 ## Features
 
 - 🔄 **Automated Action Updates**: Automatically detects and updates deprecated GitHub Actions
+- 🤖 **AI Code Review**: Automated code review on pull requests with security and quality analysis
 - ✅ **Checkpoint Testing**: Validates workflow operations with dummy data and simulated service accounts
 - 🎯 **Zero-Cost Model**: Leverages GitHub's free tier for service management
 - 📊 **Continuous Validation**: Daily automated testing ensures system reliability
@@ -51,8 +52,9 @@ Management and deployment of GitHub services at 0 costs models
 This repository includes several GitHub Actions workflows:
 
 1. **Auto-fix Deprecated Actions** - Automatically updates deprecated actions to latest versions
-2. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
-3. **Checkpoint Workflow with Dummy Data** - Validates operations with simulated test scenarios
+2. **AI Code Review** - Automated code review for pull requests with security and quality checks
+3. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
+4. **Checkpoint Workflow with Dummy Data** - Validates operations with simulated test scenarios
 
 ## Getting Started
 

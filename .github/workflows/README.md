@@ -156,6 +156,33 @@ The workflow executes through 5 checkpoints to validate operations:
 - ✅ No need to wait for real workflow events
 - ✅ Configurable outcome for testing both success and failure scenarios
 
+### 6. AI Code Review (`ai-code-review.yml`)
+
+**Purpose**: Automatically reviews code changes in pull requests and provides feedback on security, quality, style, and best practices.
+
+**Triggers**:
+- **PR Opened**: When a new pull request is created
+- **PR Synchronized**: When new commits are pushed to a pull request
+- **PR Reopened**: When a closed pull request is reopened
+
+**What It Does**:
+1. Checks out the repository and analyzes changed files
+2. Performs automated code analysis:
+   - 🔒 **Security vulnerability detection**: Scans for hardcoded credentials and secrets
+   - 📊 **Code quality analysis**: Checks for TODO/FIXME comments and code patterns
+   - 🎨 **Style consistency checks**: Validates coding style and conventions
+   - ✅ **Best practices validation**: Ensures code follows repository standards
+3. Posts a comprehensive review comment on the pull request
+4. Provides actionable feedback when issues are found
+
+**Benefits**:
+- ✅ Automated code review for every pull request
+- ✅ Early detection of security vulnerabilities
+- ✅ Consistent code quality enforcement
+- ✅ Reduces manual review burden
+- ✅ Provides immediate feedback to contributors
+- ✅ Helps maintain code quality standards
+
 ## Best Practices
 
 ### Using actions/cache@v4
