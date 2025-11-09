@@ -82,8 +82,10 @@ The `test-data/` directory contains:
 ## Documentation
 
 - [Workflows README](.github/workflows/README.md) - Detailed workflow documentation
+- [AI Review Reports Guide](docs/AI-REVIEW-REPORTS.md) - Understanding AI Code Review Reports
 - [Checkpoint Guide](CHECKPOINT-GUIDE.md) - Complete guide to checkpoint testing
 - [Test Data README](test-data/README.md) - Information about test data structure
+- [All Documentation](docs/README.md) - Complete documentation index
 
 ## Contributing
 
