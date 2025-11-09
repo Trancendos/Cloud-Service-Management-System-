@@ -49,15 +49,15 @@ jobs:
         id: validation
         run: |
           chmod +x scripts/validate-data.sh
-          ./scripts/validate-data.sh
+          ./scripts/validate-data.sh 2>&1 | tee /tmp/validation_output.txt
         continue-on-error: true
       
       - name: Generate validation report
         id: report
         if: always()
         run: |
-          # Re-run validation to capture output
-          OUTPUT=$(./scripts/validate-data.sh 2>&1 || true)
+          # Read validation output from previous step
+          OUTPUT="$(cat /tmp/validation_output.txt)"
           
           # Extract metrics from the output
           VALID=$(echo "$OUTPUT" | grep "✅ Valid Files:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g')
