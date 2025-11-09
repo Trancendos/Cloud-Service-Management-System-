@@ -118,6 +118,7 @@ Results are posted as PR comments with a summary:
 - ✅ Valid Files: 22
 - ❌ Invalid Files: 0
 - ⚠️ Warnings: 0
+- 💡 Suggestions: 0
 
 Check the workflow logs for detailed information.
 ```
