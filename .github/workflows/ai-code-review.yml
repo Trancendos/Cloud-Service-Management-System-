@@ -101,31 +101,37 @@ jobs:
             let commentBody;
 
             if (issuesCount === '0') {
-              commentBody = '## 🤖 AI Code Review Report\n\n' +
+              commentBody = '<!-- ai-code-review-bot -->\n' +
+                '## 🤖 AI Code Review Report\n\n' +
                 '**Files Reviewed:** ' + filesCount + '\n\n' +
                 '✅ **Great work!** No issues found in this PR.\n\n' +
                 '---\n' +
-                '*Check the workflow logs for detailed findings.*\n\n' +
+                '*Check the workflow logs for detailed findings and recommendations.*\n\n' +
                 '**AI Review Capabilities:**\n' +
                 '- ✅ Security vulnerability detection\n' +
                 '- ✅ Code quality analysis\n' +
                 '- ✅ Style consistency checks\n' +
-                '- ✅ Best practices validation\n';
+                '- ✅ Best practices validation\n\n' +
+                '> **Note:** This is an automated review comment. ' +
+                'It should not be converted into an issue.\n';
             } else {
               const analysisReport =
                 fs.readFileSync('analysis_report.md', 'utf8');
-              commentBody = '## 🤖 AI Code Review Report\n\n' +
+              commentBody = '<!-- ai-code-review-bot -->\n' +
+                '## 🤖 AI Code Review Report\n\n' +
                 '**Files Reviewed:** ' + filesCount + '\n\n' +
                 '⚠️ **Found ' + issuesCount +
                 ' potential issue(s)** that may need attention.\n\n' +
                 analysisReport + '\n\n' +
                 '---\n' +
-                '*Check the workflow logs for detailed findings.*\n\n' +
+                '*Check the workflow logs for detailed findings and recommendations.*\n\n' +
                 '**AI Review Capabilities:**\n' +
                 '- ✅ Security vulnerability detection\n' +
                 '- ✅ Code quality analysis\n' +
                 '- ✅ Style consistency checks\n' +
-                '- ✅ Best practices validation\n';
+                '- ✅ Best practices validation\n\n' +
+                '> **Note:** This is an automated review comment. ' +
+                'Please address the findings above rather than converting this comment into an issue.\n';
             }
 
             // Find existing comment from this workflow
