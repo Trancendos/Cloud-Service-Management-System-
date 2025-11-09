@@ -53,7 +53,7 @@ Management and deployment of GitHub services at 0 costs models
 This repository includes automated AI-powered code review that provides instant feedback on pull requests. The AI Code Review Bot analyzes code changes for:
 
 - 🔒 **Security vulnerabilities** - Detects hardcoded secrets, command injection, dangerous functions
-- ⚠️ **Code quality issues** - Identifies complexity, TODOs, and maintainability concerns  
+- ⚠️ **Code quality issues** - Identifies complexity, TODOs, and maintainability concerns
 - 💅 **Style consistency** - Checks naming conventions and modern syntax usage
 - 💡 **Best practices** - Suggests improvements for error handling, performance, and testing
 
