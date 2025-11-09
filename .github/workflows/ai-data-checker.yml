@@ -252,9 +252,9 @@ jobs:
             }
             
             comment += `**Summary:**\n`;
-            comment += `- Valid Files: ${valid_count}\n`;
-            comment += `- Invalid Files: ${invalid_count}\n`;
-            comment += `- Warnings: ${warning_count}\n\n`;
+            comment += `- ✅ Valid Files: ${valid_count}\n`;
+            comment += `- ❌ Invalid Files: ${invalid_count}\n`;
+            comment += `- ⚠️ Warnings: ${warning_count}\n\n`;
             comment += `Check the workflow logs for detailed information.`;
             
             github.rest.issues.createComment({
