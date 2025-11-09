@@ -43,17 +43,17 @@ Management and deployment of GitHub services at 0 costs models
 
 - 🔄 **Automated Action Updates**: Automatically detects and updates deprecated GitHub Actions
 - 🤖 **AI Code Review**: Automated code review on pull requests with security and quality analysis
+- 📄 **AI Data Validation**: Automated validation of JSON, YAML, and Markdown files with smart security checks
 - ✅ **Checkpoint Testing**: Validates workflow operations with dummy data and simulated service accounts
 - 🎯 **Zero-Cost Model**: Leverages GitHub's free tier for service management
 - 📊 **Continuous Validation**: Daily automated testing ensures system reliability
-- 🤖 **AI Code Review**: Automated code analysis with security, quality, and style checks
 
 ## 🤖 AI Code Review Reports
 
 This repository includes automated AI-powered code review that provides instant feedback on pull requests. The AI Code Review Bot analyzes code changes for:
 
 - 🔒 **Security vulnerabilities** - Detects hardcoded secrets, command injection, dangerous functions
-- ⚠️ **Code quality issues** - Identifies complexity, TODOs, and maintainability concerns  
+- ⚠️ **Code quality issues** - Identifies complexity, TODOs, and maintainability concerns
 - 💅 **Style consistency** - Checks naming conventions and modern syntax usage
 - 💡 **Best practices** - Suggests improvements for error handling, performance, and testing
 
@@ -70,14 +70,39 @@ Python, JavaScript/TypeScript, Shell Scripts, YAML/Workflows
 
 📖 **[Read the AI Code Review Reports Guide](docs/AI-CODE-REVIEW-REPORTS.md)** for detailed information about report formats, customization, and best practices.
 
+## 🤖 AI Data Validation Reports
+
+This repository includes automated AI-powered data validation that ensures data file integrity and security. The AI Data Checker validates JSON, YAML, and Markdown files for:
+
+- 📄 **Syntax validation** - Ensures proper JSON and YAML structure
+- 🔒 **Security checks** - Detects sensitive field names in production files
+- ⚠️ **Quality issues** - Identifies empty files, placeholder links, and TODO markers
+- 🧠 **Smart filtering** - Recognizes test data to eliminate false positives
+
+### How It Works
+
+1. Create or update a pull request with data file changes
+2. AI Data Checker automatically validates all JSON, YAML, and Markdown files
+3. Receive instant validation report as a PR comment
+4. View detailed findings in workflow logs
+
+### Smart Features
+
+- **Test Data Recognition**: Automatically identifies test directories and dummy values
+- **False Positive Prevention**: Skips security warnings for legitimate test files
+- **Comprehensive Scanning**: Validates syntax, structure, and content
+
+📖 **[Read the AI Data Validation Reports Guide](docs/AI-DATA-VALIDATION-REPORTS.md)** for detailed information about validation rules, report formats, and best practices.
+
 ## Workflows
 
 This repository includes several GitHub Actions workflows:
 
 1. **Auto-fix Deprecated Actions** - Automatically updates deprecated actions to latest versions
 2. **AI Code Review** - Automated code review for pull requests with security and quality checks
-3. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
-4. **Checkpoint Workflow with Dummy Data** - Validates operations with simulated test scenarios
+3. **AI Data Validation** - Validates JSON, YAML, and Markdown files with smart security scanning
+4. **Example CI with Cache** - Demonstrates best practices for caching and CI workflows
+5. **Checkpoint Workflow with Dummy Data** - Validates operations with simulated test scenarios
 
 ## Getting Started
 
