@@ -124,8 +124,10 @@ jobs:
                       self.results['warnings'].append(f"⚠️ {filepath}: Empty JSON array")
                   
                   # Check for common security issues
-                  data_str = json.dumps(data)
-                  if any(keyword in data_str.lower() for keyword in ['password', 'secret', 'token', 'api_key']):
+                  if isinstance(data, dict) and any(
+                      any(keyword in str(k).lower() for keyword in ['password', 'secret', 'token', 'api_key'])
+                      for k in data.keys()
+                  ):
                       self.results['warnings'].append(
                           f"⚠️ {filepath}: Contains sensitive field names. Ensure no secrets are committed!"
                       )
