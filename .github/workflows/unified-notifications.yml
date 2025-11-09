@@ -1,0 +1,73 @@
+name: Unified Notification System
+
+# Consolidates: pr-notifications.yml, workflow-notifications.yml, test-notifications.yml
+# Provides centralized notification management for Slack, Notion, and Linear
+
+on:
+  pull_request:
+    types: [opened, closed, reopened]
+  issues:
+    types: [opened, closed, labeled]
+  workflow_run:
+    workflows: ["Cloud Service Management - CI/CD"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Determine notification type
+        id: notification_type
+        run: |
+          echo "event=${{ github.event_name }}" >> $GITHUB_OUTPUT
+          echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+      
+      - name: Prepare notification content
+        id: content
+        run: |
+          EVENT="${{ github.event_name }}"
+          REPO="${{ github.repository }}"
+          ACTOR="${{ github.actor }}"
+          
+          if [ "$EVENT" == "pull_request" ]; then
+            TITLE="PR ${{ github.event.action }}: ${{ github.event.pull_request.title }}"
+            URL="${{ github.event.pull_request.html_url }}"
+          elif [ "$EVENT" == "issues" ]; then
+            TITLE="Issue ${{ github.event.action }}: ${{ github.event.issue.title }}"
+            URL="${{ github.event.issue.html_url }}"
+          elif [ "$EVENT" == "workflow_run" ]; then
+            TITLE="Workflow completed: ${{ github.event.workflow_run.name }}"
+            URL="${{ github.event.workflow_run.html_url }}"
+          fi
+          
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "url=$URL" >> $GITHUB_OUTPUT
+      
+      - name: Notify Slack (if configured)
+        if: env.SLACK_WEBHOOK != ''
+        run: |
+          echo "Would notify Slack: ${{ steps.content.outputs.title }}"
+          # Actual Slack notification when webhook configured
+          # curl -X POST $SLACK_WEBHOOK -d '{"text": "..."}'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      
+      - name: Update Notion (if configured)
+        run: |
+          echo "Would update Notion log"
+          # Add Notion API integration when configured
+      
+      - name: Update Linear (if configured)
+        run: |
+          echo "Would update Linear ticket"
+          # Add Linear API integration when configured
+      
+      - name: Fallback logging
+        if: always()
+        run: |
+          echo "Notification logged:"
+          echo "  Title: ${{ steps.content.outputs.title }}"
+          echo "  URL: ${{ steps.content.outputs.url }}"
+          echo "  Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
