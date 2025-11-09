@@ -244,10 +244,11 @@ jobs:
             
             let comment = '## 🤖 AI Data Validation Report\n\n';
             
-            if (validation_passed) {
+            // Check both validation_passed flag and invalid_count to ensure correct message
+            if (validation_passed || invalid_count === '0') {
               comment += '✅ All data files passed validation!\n\n';
             } else {
-              comment += '❌ Some data files have validation errors.\n\n';
+              comment += '❌ Some data files failed validation\n\n';
             }
             
             comment += `**Summary:**\n`;
