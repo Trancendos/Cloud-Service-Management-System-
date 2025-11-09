@@ -116,6 +116,7 @@ jobs:
                       # - List items (lines starting with -, *, or numbers)
                       # - Code blocks (between ``` or indented with 4+ spaces)
                       # - Headers (lines starting with #)
+                      # Only flag patterns like "TODO:" or "FIXME:" to avoid false positives
                       lines = content.split('\n')
                       in_code_block = False
                       found_actionable_todo = False
@@ -138,8 +139,8 @@ jobs:
                           if re.match(r'^\s*[-*+]\s', line) or re.match(r'^\s*\d+\.\s', line) or line.startswith('    '):
                               continue
                           
-                          # Check for TODO/FIXME in remaining lines
-                          if re.search(r'\b(TODO|FIXME|XXX)\b', line, re.IGNORECASE):
+                          # Check for actionable TODO/FIXME patterns (with colon)
+                          if re.search(r'\b(TODO|FIXME|XXX)\s*:', line, re.IGNORECASE):
                               found_actionable_todo = True
                               break
                       
