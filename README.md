@@ -87,7 +87,7 @@ The repository includes automated data validation that runs on every PR:
 - Validates JSON files in `test-data/`
 - Validates YAML configuration files for all supported platforms
 - Posts validation reports as PR comments
-- Total of 7 critical data files are validated
+- All critical data files are validated
 
 Run validation manually:
 ```bash
