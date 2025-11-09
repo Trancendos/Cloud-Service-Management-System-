@@ -63,6 +63,45 @@ chmod +x scripts/logging_example.sh
 9. Different log level filtering
 10. Function entry/exit tracing
 
+### validate-test-data.sh
+
+Validation script for JSON files in the test-data/ directory.
+
+**Purpose**: Validates all JSON files in the test-data/ directory, ensuring they have valid syntax and structure. This script demonstrates proper handling of empty glob patterns using `shopt -s nullglob`.
+
+**Usage**:
+```bash
+chmod +x scripts/validate-test-data.sh
+./scripts/validate-test-data.sh
+```
+
+**Features**:
+- Uses `shopt -s nullglob` for proper empty glob handling
+- Validates JSON syntax using `jq`
+- Checks JSON structure (object or array)
+- Provides detailed validation summary
+- Gracefully handles directories with no JSON files
+
+**Why nullglob?** Without `shopt -s nullglob`, if no JSON files exist in the test-data/ directory, the glob pattern `test-data/*.json` won't expand and `$file` will literally be the string 'test-data/*.json'. The `nullglob` option makes the glob expand to nothing when no files match, preventing the loop from executing with an invalid filename.
+
+### test-nullglob-behavior.sh
+
+Demonstration script showing the difference between glob behavior with and without nullglob.
+
+**Purpose**: Educational script that demonstrates why `shopt -s nullglob` is important when iterating over files with glob patterns.
+
+**Usage**:
+```bash
+chmod +x scripts/test-nullglob-behavior.sh
+./scripts/test-nullglob-behavior.sh
+```
+
+**What it demonstrates**:
+- Glob behavior without nullglob (default)
+- Glob behavior with nullglob enabled
+- The problem: glob patterns that don't match any files
+- The solution: using nullglob to handle empty matches gracefully
+
 ## Integration with GitHub Actions
 
 These scripts are designed to work seamlessly with GitHub Actions workflows. See the example workflows:
