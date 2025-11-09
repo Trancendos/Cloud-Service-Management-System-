@@ -187,6 +187,40 @@ The latest version of `actions/cache` includes:
 - **Features**: Access to latest caching features and improvements
 - **Compatibility**: Ensures workflows work with current GitHub infrastructure
 
+### 8. AI Data Checker (`ai-data-checker.yml`)
+
+**Purpose**: Automatically validates JSON, YAML, and Markdown files for syntax errors, security issues, and common problems.
+
+**Triggers**:
+- **Pull Requests**: Runs when data files are changed (*.json, *.yaml, *.yml, *.md)
+- **Push to main**: Runs when data files are pushed to main branch
+- **Manual**: Can be triggered manually via workflow_dispatch
+
+**What It Does**:
+1. Scans all JSON, YAML, and Markdown files in the repository
+2. Validates syntax and structure
+3. Checks for security concerns (sensitive field names in non-test files)
+4. Detects common issues:
+   - Empty JSON objects/arrays
+   - Empty YAML files
+   - Placeholder links (example.com)
+   - TODO/FIXME markers
+   - Missing workflow names
+
+**Smart Features**:
+- ✅ Recognizes test data directories (`test-data/`, `tests/`, `examples/`, etc.)
+- ✅ Detects dummy values (DUMMY, test, sample, not_real, for_testing)
+- ✅ Skips false-positive warnings for test files
+- ✅ Posts validation report as PR comment
+- ✅ Categorizes findings as errors, warnings, or suggestions
+
+**Benefits**:
+- ✅ Prevents invalid data files from being merged
+- ✅ Catches security issues early (sensitive data in production files)
+- ✅ Maintains data quality across the repository
+- ✅ Provides clear feedback in PR comments
+- ✅ Eliminates false positives for test/dummy data
+
 ## Maintenance
 
 The `auto-fix-deprecated-actions.yml` workflow handles most maintenance automatically. However, you can:
