@@ -271,15 +271,16 @@ jobs:
         with:
           script: |
             const validation_passed = '${{ steps.data-check.outputs.validation_passed }}' === 'true';
-            const invalid_count = '${{ steps.data-check.outputs.invalid_count }}';
-            const warning_count = '${{ steps.data-check.outputs.warning_count }}';
-            const suggestion_count = '${{ steps.data-check.outputs.suggestion_count }}';
-            const valid_count = '${{ steps.data-check.outputs.valid_count }}';
+            // Parse counts as integers to ensure they're numeric values
+            const invalid_count = parseInt('${{ steps.data-check.outputs.invalid_count }}') || 0;
+            const warning_count = parseInt('${{ steps.data-check.outputs.warning_count }}') || 0;
+            const valid_count = parseInt('${{ steps.data-check.outputs.valid_count }}') || 0;
+            const suggestion_count = parseInt('${{ steps.data-check.outputs.suggestion_count }}') || 0;
             
             let comment = '## 🤖 AI Data Validation Report\n\n';
             
             // Check both validation_passed flag and invalid_count to ensure correct message
-            if (validation_passed || invalid_count === '0') {
+            if (validation_passed || invalid_count === 0) {
               comment += '✅ All data files passed validation!\n\n';
             } else {
               comment += '❌ Some data files failed validation\n\n';
