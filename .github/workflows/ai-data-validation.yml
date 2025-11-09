@@ -65,7 +65,7 @@ jobs:
           WARNINGS=$(echo "$OUTPUT" | grep "⚠️ Warnings:" | sed 's/.*: //' | sed 's/\x1b\[[0-9;]*m//g' || echo "0")
           
           # Create the report
-          if [ "$INVALID" = "0" ]; then
+          if [ -z "$INVALID" ] || [ "$INVALID" = "0" ]; then
             STATUS_EMOJI="✅"
             STATUS_TEXT="All data files passed validation!"
           else
